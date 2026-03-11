@@ -41,6 +41,11 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [result] = await db.select().from(user).where(eq(user.username, username));
+    return result;
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
     const [result] = await db.insert(user).values(insertUser).returning();
     return result;
@@ -146,13 +151,19 @@ export class DatabaseStorage implements IStorage {
       `);
     }
 
-    // Check if user exists
-    const existingUsers = await db.select().from(user);
-    if (existingUsers.length === 0) {
-      // Create default user with id 1 using raw SQL
+    // Seed users if they don't exist yet
+    const tom = await this.getUserByUsername("TomSawyer");
+    if (!tom) {
       await db.execute(sql`
-        INSERT INTO "user" (email, display_name) 
-        VALUES ('demo@example.com', 'Demo User')
+        INSERT INTO "user" (email, display_name, username, password)
+        VALUES ('tom@example.com', 'Tom Sawyer', 'TomSawyer', 'cantreadyet')
+      `);
+    }
+    const xie = await this.getUserByUsername("XieXie");
+    if (!xie) {
+      await db.execute(sql`
+        INSERT INTO "user" (email, display_name, username, password)
+        VALUES ('xiexie@example.com', 'Xie Xie', 'XieXie', 'thankyou')
       `);
     }
 

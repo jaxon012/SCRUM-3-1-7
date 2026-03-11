@@ -1,6 +1,8 @@
 import { Link, useLocation } from "wouter";
 import { Home, BookOpen, Mic, Gamepad2, ChevronLeft, Menu } from "lucide-react";
 import { motion } from "framer-motion";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -10,6 +12,40 @@ interface LayoutProps {
 
 export function Layout({ children, title, showBack = false }: LayoutProps) {
   const [location] = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const queryClient = useQueryClient();
+
+  const { data: currentUser } = useQuery({
+    queryKey: ["me"],
+    queryFn: () => fetch("/api/me", { credentials: "include" }).then(r => r.json()),
+  });
+
+  const loginMutation = useMutation({
+    mutationFn: () => fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ username, password }),
+    }).then(async r => {
+      if (!r.ok) throw new Error("Invalid credentials");
+      return r.json();
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["me"] });
+      setUsername("");
+      setPassword("");
+      setError("");
+    },
+    onError: () => setError("Invalid username or password"),
+  });
+
+  const logoutMutation = useMutation({
+    mutationFn: () => fetch("/api/logout", { method: "POST", credentials: "include" }).then(r => r.json()),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["me"] }),
+  });
 
   return (
     <div className="min-h-screen bg-background flex flex-col max-w-md mx-auto shadow-2xl overflow-hidden border-x border-border/40 relative">
@@ -34,9 +70,37 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
             </Link>
           )}
         </div>
-        <button className="p-2 rounded-full hover:bg-secondary transition-colors">
-          <Menu className="w-5 h-5 text-muted-foreground" />
-        </button>
+        <div className="relative">
+          <button onClick={() => setMenuOpen(!menuOpen)} className="p-2 rounded-full hover:bg-secondary transition-colors">
+            <Menu className="w-5 h-5 text-muted-foreground" />
+          </button>
+          {menuOpen && (
+            <div className="absolute right-0 top-12 w-64 bg-white rounded-xl shadow-lg border border-border/50 p-4 z-50">
+              {currentUser ? (
+                <div>
+                  <p className="text-sm font-medium mb-2">Logged in as <strong>{currentUser.displayName}</strong></p>
+                  <button onClick={() => { logoutMutation.mutate(); setMenuOpen(false); }}
+                    className="w-full py-2 px-4 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600">
+                    Log Out
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm font-medium">Log In</p>
+                  {error && <p className="text-xs text-red-500">{error}</p>}
+                  <input value={username} onChange={e => setUsername(e.target.value)} placeholder="Username"
+                    className="border rounded-lg px-3 py-2 text-sm" />
+                  <input value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" type="password"
+                    className="border rounded-lg px-3 py-2 text-sm" />
+                  <button onClick={() => loginMutation.mutate()}
+                    className="w-full py-2 px-4 bg-primary text-white rounded-lg text-sm hover:opacity-90">
+                    Log In
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </header>
 
       {/* Main Content */}
