@@ -1,5 +1,11 @@
 # Language Learning Adventure
 
+## March 10th Update - How to get running: Create a branch off of main. To run the app, do the following terminal commands in VS code:
+- npm install
+- PORT=5001 npm run dev
+
+  Then, open up localhost:5001 and you should be see it. For some reaosn it wouldn't let me go on port 5000.
+
 ## App Summary
 Language Learning Adventure is a gamified language learning platform designed to make vocabulary acquisition and reading practice engaging and interactive. The application targets language learners who want to supplement their studies with daily challenges, reading comprehension exercises, and an immersive text-based adventure game. Users can track their progress through daily streaks, learn new words with flashcards, and practice reading with level-appropriate passages. The product uniquely combines traditional learning tools with AI-driven voice interaction in its Adventure mode to simulate real-world language usage.
 
