@@ -27,8 +27,11 @@ CREATE TABLE "user" (
   user_id       INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   email         VARCHAR(255) NOT NULL,
   display_name  VARCHAR(100) NOT NULL,
+  username      VARCHAR(100) NOT NULL,
+  password      VARCHAR(255) NOT NULL,
   created_at    TIMESTAMP NOT NULL DEFAULT NOW(),
-  CONSTRAINT uq_user_email UNIQUE (email)
+  CONSTRAINT uq_user_email UNIQUE (email),
+  CONSTRAINT uq_user_username UNIQUE (username)
 );
 
 -- 1:1 optional table (user may have 0 or 1 streak record)
@@ -89,7 +92,6 @@ CREATE TABLE passage (
   CONSTRAINT ck_passage_level_nonneg CHECK (reading_level >= 0)
 );
 
--- Junction: which words appear in which passage
 CREATE TABLE passage_word (
   passage_word_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   passage_id      INT NOT NULL,
@@ -148,7 +150,6 @@ CREATE TABLE scene (
 
 CREATE INDEX idx_scene_adventure_id ON scene(adventure_id);
 
--- Choices branch between scenes (next_scene_id is optional for end scenes)
 CREATE TABLE choice (
   choice_id      INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   scene_id       INT NOT NULL,
@@ -165,7 +166,6 @@ CREATE TABLE choice (
 CREATE INDEX idx_choice_scene_id ON choice(scene_id);
 CREATE INDEX idx_choice_next_scene_id ON choice(next_scene_id);
 
--- Tracks where a user currently is in an adventure
 CREATE TABLE user_adventure_state (
   user_adventure_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   user_id           INT NOT NULL,
