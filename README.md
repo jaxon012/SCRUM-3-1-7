@@ -9,6 +9,18 @@
 ## App Summary
 Language Learning Adventure is a gamified language learning platform designed to make vocabulary acquisition and reading practice engaging and interactive. The application targets language learners who want to supplement their studies with daily challenges, reading comprehension exercises, and an immersive text-based adventure game. Users can track their progress through daily streaks, learn new words with flashcards, and practice reading with level-appropriate passages. The product uniquely combines traditional learning tools with AI-driven voice interaction in its Adventure mode to simulate real-world language usage.
 
+## Ears Requirements
+
+### Ubiquitous Requirements:
+The system shall track user progress across lessons and activities.
+
+### Event-Driven Requirements:
+When a word is typed out the computer shall read the word out and bring up the definition
+When a word is searched, the recommendation algorithm shall add it to its dictionary of words the user struggled with. 
+
+State-Driven Requirements:
+While reading speed remains below a certain level, the recommendation algorithm shall recommend low level texts.
+
 ## Tech Stack
 - **Frontend**: React, Vite, Tailwind CSS, Shadcn UI, Framer Motion, React Query, Wouter
 - **Backend**: Node.js, Express, Passport.js (Authentication)
