@@ -18,7 +18,7 @@ The system shall track user progress across lessons and activities.
 When a word is typed out the computer shall read the word out and bring up the definition
 When a word is searched, the recommendation algorithm shall add it to its dictionary of words the user struggled with. 
 
-State-Driven Requirements:
+### State-Driven Requirements:
 While reading speed remains below a certain level, the recommendation algorithm shall recommend low level texts.
 
 ## Tech Stack
