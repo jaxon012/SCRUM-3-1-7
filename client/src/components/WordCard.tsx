@@ -44,14 +44,26 @@ export function WordCard({ word, index }: WordCardProps) {
         className="p-4 flex items-center justify-between cursor-pointer"
       >
         <div className="flex items-center gap-4 flex-1">
-          <div className={`
-            w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg
-            ${isMastered 
-              ? 'bg-green-500/10 text-green-600' 
-              : 'bg-primary/10 text-primary'
-            }
-          `}>
-            {isMastered ? <Check className="w-5 h-5" /> : word.term.charAt(0).toUpperCase()}
+          <div
+            className={`
+              w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg overflow-hidden
+              ${isMastered 
+                ? 'bg-green-500/10 text-green-600' 
+                : 'bg-primary/10 text-primary'
+              }
+            `}
+          >
+            {isMastered ? (
+              <Check className="w-5 h-5" />
+            ) : word.imageUrl ? (
+              <img
+                src={word.imageUrl}
+                alt={word.term}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              word.term.charAt(0).toUpperCase()
+            )}
           </div>
           <div>
             <h3 className="font-bold text-lg text-foreground leading-tight">{word.term}</h3>
@@ -86,6 +98,17 @@ export function WordCard({ word, index }: WordCardProps) {
                 <span className="text-xs font-semibold text-primary uppercase tracking-wider">Definition</span>
                 <p className="text-sm text-foreground/80 leading-relaxed">{word.definition}</p>
               </div>
+
+              {word.imageUrl && (
+                <div className="space-y-1">
+                  <span className="text-xs font-semibold text-primary uppercase tracking-wider">Picture</span>
+                  <img
+                    src={word.imageUrl}
+                    alt={word.term}
+                    className="w-full max-h-64 object-cover rounded-xl border border-border/60"
+                  />
+                </div>
+              )}
 
               {word.phonetic && (
                 <div className="space-y-1">

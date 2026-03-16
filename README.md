@@ -1,10 +1,8 @@
-# Language Learning Adventure
+## Language Learning Adventure
 
-## March 10th Update - How to get running: Create a branch off of main. To run the app, do the following terminal commands in VS code:
-- npm install
-- PORT=5001 npm run dev
+### How to get running (local development)
 
-  Then, open up localhost:5001 and you should be see it. For some reaosn it wouldn't let me go on port 5000.
+Create a branch off of `main`, then follow the steps below.
 
 ## App Summary
 Language Learning Adventure is a gamified language learning platform designed to make vocabulary acquisition and reading practice engaging and interactive. The application targets language learners who want to supplement their studies with daily challenges, reading comprehension exercises, and an immersive text-based adventure game. Users can track their progress through daily streaks, learn new words with flashcards, and practice reading with level-appropriate passages. The product uniquely combines traditional learning tools with AI-driven voice interaction in its Adventure mode to simulate real-world language usage.
@@ -38,12 +36,12 @@ graph TD
 ```
 
 ## Prerequisites
-Before you begin, ensure you have the following software installed on your system:
-- **Node.js**: (v18 or higher) - [Download & Install Node.js](https://nodejs.org/)
-- **PostgreSQL**: (v14 or higher) - [Download & Install PostgreSQL](https://www.postgresql.org/download/)
-- **psql**: Command-line interface for PostgreSQL (usually installed with PostgreSQL).
+Before you begin, ensure you have the following installed:
+- **Node.js**: v18 or higher
+- **PostgreSQL**: v14 or higher
+- **psql**: Command-line interface for PostgreSQL (usually installed with PostgreSQL)
 
-Verify your installation by running the following commands in your terminal:
+Verify your installation:
 ```bash
 node -v
 psql --version
@@ -51,38 +49,59 @@ psql --version
 
 ## Installation and Setup
 
-1.  **Install Application Dependencies**:
-    Navigate to the project directory and install the required Node.js packages:
+1.  **Install root dependencies**  
+    From the project root:
     ```bash
     npm install
     ```
 
-2.  **Set Up the Database**:
-    Create a new PostgreSQL database for the application and initialize it with the schema:
+2.  **Install client dependencies**  
     ```bash
-    createdb language_app
-    psql -d language_app -f db/schema.sql
-    psql -d language_app -f db/seed.sql
+    cd client
+    npm install
+    cd ..
     ```
 
-3.  **Configure Environment Variables**:
-    Create a `.env` file in the root directory and add your database connection string and any other required keys (e.g., OpenAI API Key).
+3.  **Set up the database**  
+    Create and initialize the `language_app` database:
+    ```bash
+    psql -U postgres -h localhost -c "CREATE DATABASE language_app;"
+    psql -U postgres -h localhost -d language_app -f db/schema.sql
+    ```
+    The backend `seedData()` function will populate users, words (with images), and passages on first run; you do **not** need to run `db/seed.sql` manually.
+
+4.  **Configure environment variables**  
+    Create a `.env` file in the project root:
     ```env
-    DATABASE_URL=postgresql://username:password@localhost:5432/language_app
+    DATABASE_URL=postgresql://postgres:admin@localhost:5432/language_app
     OPENAI_API_KEY=your_openai_api_key_here
+    PEXELS_API_KEY=your_pexels_api_key_here
     ```
+    - `DATABASE_URL` should match your local Postgres credentials.
+    - `PEXELS_API_KEY` is optional but recommended; it allows the app to fetch and store example images for vocabulary words during seeding.
 
-## Running the Application
+## Running the Application (development)
 
-1.  **Start the Development Server**:
-    Run the following command to start both the backend server and frontend client:
+Backend and frontend run as separate dev servers:
+
+1.  **Start the backend (Express API)**  
+    From the project root:
     ```bash
     npm run dev
     ```
+    This serves the API on `http://localhost:5000`.
 
-2.  **Access the Application**:
-    Open your web browser and navigate to:
-    [http://localhost:5000](http://localhost:5000)
+2.  **Start the frontend (Vite dev server)**  
+    In a second terminal:
+    ```bash
+    cd client
+    npm run dev -- --port 5174
+    ```
+    Vite will print a URL such as `http://localhost:5174/`.
+
+3.  **Access the application**  
+    - Open your browser to the frontend: `http://localhost:5174/`
+    - The frontend will communicate with the backend via `/api/...` on port `5000`.
 
 ## Verifying the Vertical Slice: Mark as Mastered
 
