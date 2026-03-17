@@ -90,6 +90,16 @@ export async function registerRoutes(
     res.json(passage);
   });
 
+  app.post(api.addToVocab.path, async (req, res) => {
+    const { term } = req.body;
+    if (!term || typeof term !== "string") {
+      return res.status(400).json({ message: "term is required", field: "term" });
+    }
+    const userId = req.session.userId || 1;
+    const result = await storage.addWordToVocab(term.trim(), userId);
+    res.json({ wordId: result.wordId, term: result.term });
+  });
+
   // Seed data on startup
   await storage.seedData();
 

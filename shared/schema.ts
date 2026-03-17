@@ -20,7 +20,6 @@ export const word = pgTable("word", {
   definition: text("definition").notNull(),
   phonetic: varchar("phonetic", { length: 120 }),
   audioUrl: varchar("audio_url", { length: 500 }),
-  imageUrl: varchar("image_url", { length: 500 }),
 });
 
 // User Word Progress table

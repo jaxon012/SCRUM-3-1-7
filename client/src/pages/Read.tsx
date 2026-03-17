@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Book, Clock, Volume2, X } from "lucide-react";
 import { useState } from "react";
 import { AudioPlayer } from "@/components/AudioPlayer";
+import { useAddWordToVocab } from "@/hooks/use-add-to-vocab";
 import type { Passage } from "@shared/schema";
 
 // Interactive word component
@@ -24,6 +25,7 @@ function ClickableWord({ word, onClick }: { word: string; onClick: (w: string) =
 export default function Read() {
   const { data: passages, isLoading } = useReadingPassages();
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
+  const { mutate: addToVocab, isPending: isAdding, isSuccess: addedSuccess } = useAddWordToVocab();
 
   // For prototype, we'll just use the first passage or a fallback
   const passage = (passages?.[0] as Passage | undefined) || {
@@ -111,7 +113,7 @@ export default function Read() {
               exit={{ opacity: 0, y: 100 }}
               className="fixed bottom-0 left-0 right-0 p-4 z-50 flex justify-center pointer-events-none"
             >
-              <div className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-3xl shadow-2xl border border-border/50 p-6 pointer-events-auto relative">
+              <div className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-3xl shadow-2xl border border-border/50 p-6 pointer-events-auto relative overflow-y-auto max-h-[80vh] pb-24">
                 <button 
                   onClick={() => setSelectedWord(null)}
                   className="absolute top-4 right-4 p-1 hover:bg-secondary rounded-full transition-colors"
@@ -142,8 +144,12 @@ export default function Read() {
                   </div>
                 </div>
 
-                <button className="w-full mt-6 bg-primary text-primary-foreground font-bold py-3 rounded-xl hover:bg-primary/90 transition-colors">
-                  Add to Flashcards
+                <button
+                  onClick={() => selectedWord && addToVocab(selectedWord)}
+                  disabled={isAdding || addedSuccess}
+                  className="w-full mt-6 bg-primary text-primary-foreground font-bold py-3 rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-60"
+                >
+                  {addedSuccess ? "✓ Added to Vocab!" : isAdding ? "Adding..." : "Add to Flashcards"}
                 </button>
               </div>
             </motion.div>

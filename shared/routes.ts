@@ -56,6 +56,15 @@ export const api = {
       },
     },
   },
+  addToVocab: {
+    method: 'POST' as const,
+    path: '/api/add-to-vocab' as const,
+    body: z.object({ term: z.string() }),
+    responses: {
+      200: z.object({ wordId: z.number(), term: z.string() }),
+      400: errorSchemas.validation,
+    },
+  },
   readingPassages: {
     list: {
         method: 'GET' as const,

@@ -55,12 +55,6 @@ export function WordCard({ word, index }: WordCardProps) {
           >
             {isMastered ? (
               <Check className="w-5 h-5" />
-            ) : word.imageUrl ? (
-              <img
-                src={word.imageUrl}
-                alt={word.term}
-                className="w-full h-full object-cover"
-              />
             ) : (
               word.term.charAt(0).toUpperCase()
             )}
@@ -98,17 +92,6 @@ export function WordCard({ word, index }: WordCardProps) {
                 <span className="text-xs font-semibold text-primary uppercase tracking-wider">Definition</span>
                 <p className="text-sm text-foreground/80 leading-relaxed">{word.definition}</p>
               </div>
-
-              {word.imageUrl && (
-                <div className="space-y-1">
-                  <span className="text-xs font-semibold text-primary uppercase tracking-wider">Picture</span>
-                  <img
-                    src={word.imageUrl}
-                    alt={word.term}
-                    className="w-full max-h-64 object-cover rounded-xl border border-border/60"
-                  />
-                </div>
-              )}
 
               {word.phonetic && (
                 <div className="space-y-1">
