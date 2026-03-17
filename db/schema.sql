@@ -56,6 +56,7 @@ CREATE TABLE word (
   definition  TEXT NOT NULL,
   phonetic    VARCHAR(120),
   audio_url   VARCHAR(500),
+  image_url   VARCHAR(500),
   CONSTRAINT uq_word_term UNIQUE (term)
 );
 

@@ -26,6 +26,7 @@ export const api = {
           definition: z.string(),
           phonetic: z.string().nullable(),
           audioUrl: z.string().nullable(),
+          imageUrl: z.string().nullable(),
           userWordProgress: z.object({
             userWordId: z.number(),
             userId: z.number(),
