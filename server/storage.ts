@@ -16,6 +16,47 @@ import {
 import { eq, and, sql, count } from "drizzle-orm";
 
 
+const PEXELS_API_KEY = process.env.PEXELS_API_KEY;
+
+async function fetchPexelsImageUrl(query: string): Promise<string | null> {
+  if (!PEXELS_API_KEY) {
+    console.warn("PEXELS_API_KEY is not set; skipping image lookup.");
+    return null;
+  }
+
+  try {
+    const url = new URL("https://api.pexels.com/v1/search");
+    url.searchParams.set("query", query);
+    url.searchParams.set("per_page", "1");
+    url.searchParams.set("orientation", "landscape");
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        Authorization: PEXELS_API_KEY,
+      },
+    });
+
+    if (!res.ok) {
+      console.error("Pexels API error status:", res.status);
+      return null;
+    }
+
+    const data: any = await res.json();
+    const photo = data?.photos?.[0];
+    const src = photo?.src;
+    return (
+      src?.large ||
+      src?.medium ||
+      src?.large2x ||
+      src?.original ||
+      null
+    );
+  } catch (error) {
+    console.error("Error calling Pexels API:", error);
+    return null;
+  }
+}
+
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
@@ -318,6 +359,26 @@ export class DatabaseStorage implements IStorage {
         ('shift', 'One of two or more recurring periods in which different groups of workers do the same jobs in relay.', '/SHift/', 'https://example.com/shift.mp3'),
         ('matey', 'A familiar and sometimes hostile form of address, especially to a stranger.', '/ˈmādē/', 'https://example.com/matey.mp3')
     `);
+
+    // Look up and store images for each word using Pexels
+    const seededWords = await db.select().from(word);
+    for (const w of seededWords) {
+      try {
+        if (w.imageUrl) continue;
+
+        // Build a richer search query using both term and definition
+        const combinedQuery = `${w.term} - ${w.definition}`;
+        const imageUrl = await fetchPexelsImageUrl(combinedQuery);
+        if (!imageUrl) continue;
+
+        await db
+          .update(word)
+          .set({ imageUrl })
+          .where(eq(word.wordId, w.wordId));
+      } catch (error) {
+        console.error(`Failed to fetch Pexels image for word "${w.term}":`, error);
+      }
+    }
 
     // Basic progress for Tom
     await db.execute(sql`
