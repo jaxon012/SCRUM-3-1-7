@@ -4,13 +4,16 @@ import {
   word,
   userWordProgress,
   passage,
+  vocabList,
+  vocabListWord,
   type User,
   type InsertUser,
   type Word,
   type UserWordProgress,
   type Passage,
+  type VocabList,
 } from "@shared/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, count } from "drizzle-orm";
 
 
 export interface IStorage {
@@ -30,6 +33,13 @@ export interface IStorage {
 
   updateWordProgress(userWordId: number): Promise<UserWordProgress | undefined>;
   addWordToVocab(term: string, userId: number): Promise<Word>;
+
+  getVocabLists(userId: number): Promise<(VocabList & { wordCount: number })[]>;
+  createVocabList(userId: number, name: string): Promise<VocabList>;
+  getVocabListWords(userId: number, listId: number): Promise<Word[]>;
+  addWordToList(userId: number, listId: number, wordId: number): Promise<{ vocabListWordId: number; vocabListId: number; wordId: number } | null>;
+
+  createOrGetWordFromTerm(term: string): Promise<Word>;
 
   seedData(): Promise<void>;
 }
@@ -146,35 +156,133 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
-  async addWordToVocab(term: string, userId: number): Promise<Word> {
-    // Find or create the word
-    let [existing] = await db.select().from(word).where(eq(word.term, term.toLowerCase()));
-    if (!existing) {
-      [existing] = await db.insert(word).values({
-        term: term.toLowerCase(),
-        definition: "Definition pending.",
+  async getVocabLists(userId: number): Promise<(VocabList & { wordCount: number })[]> {
+    const rows = await db
+      .select({
+        vocabListId: vocabList.vocabListId,
+        userId: vocabList.userId,
+        name: vocabList.name,
+        createdAt: vocabList.createdAt,
+        wordCount: count(vocabListWord.wordId),
+      })
+      .from(vocabList)
+      .leftJoin(vocabListWord, eq(vocabList.vocabListId, vocabListWord.vocabListId))
+      .where(eq(vocabList.userId, userId))
+      .groupBy(vocabList.vocabListId);
+
+    return rows as (VocabList & { wordCount: number })[];
+  }
+
+  async createVocabList(userId: number, name: string): Promise<VocabList> {
+    const [created] = await db
+      .insert(vocabList)
+      .values({ userId, name })
+      .returning();
+    return created;
+  }
+
+  async getVocabListWords(userId: number, listId: number): Promise<Word[]> {
+    const [list] = await db
+      .select()
+      .from(vocabList)
+      .where(eq(vocabList.vocabListId, listId));
+    if (!list || list.userId !== userId) {
+      return [];
+    }
+
+    const rows = await db
+      .select({
+        wordId: word.wordId,
+        term: word.term,
+        definition: word.definition,
+        phonetic: word.phonetic,
+        audioUrl: word.audioUrl,
+        imageUrl: word.imageUrl,
+      })
+      .from(vocabListWord)
+      .innerJoin(word, eq(vocabListWord.wordId, word.wordId))
+      .where(eq(vocabListWord.vocabListId, listId));
+
+    return rows as Word[];
+  }
+
+  async addWordToList(
+    userId: number,
+    listId: number,
+    wordId: number
+  ): Promise<{ vocabListWordId: number; vocabListId: number; wordId: number } | null> {
+    const [list] = await db
+      .select()
+      .from(vocabList)
+      .where(eq(vocabList.vocabListId, listId));
+    if (!list || list.userId !== userId) {
+      return null;
+    }
+
+    const existing = await db
+      .select()
+      .from(vocabListWord)
+      .where(
+        and(
+          eq(vocabListWord.vocabListId, listId),
+          eq(vocabListWord.wordId, wordId)
+        )
+      );
+    if (existing.length > 0) {
+      const row = existing[0];
+      return {
+        vocabListWordId: row.vocabListWordId,
+        vocabListId: row.vocabListId,
+        wordId: row.wordId,
+      };
+    }
+
+    const [created] = await db
+      .insert(vocabListWord)
+      .values({ vocabListId: listId, wordId })
+      .returning();
+
+    return {
+      vocabListWordId: created.vocabListWordId,
+      vocabListId: created.vocabListId,
+      wordId: created.wordId,
+    };
+  }
+
+  async createOrGetWordFromTerm(term: string): Promise<Word> {
+    const cleanTerm = term.trim();
+    const lowered = cleanTerm.toLowerCase();
+
+    const existing = await db
+      .select()
+      .from(word)
+      .where(eq(word.term, lowered));
+    if (existing.length > 0) {
+      return existing[0];
+    }
+
+    const definition = "User-added word; definition to be set later.";
+
+    let imageUrl: string | null = null;
+    try {
+      const pexelsResult = await fetchPexelsImageUrl(cleanTerm);
+      imageUrl = pexelsResult;
+    } catch (e) {
+      console.error("Error fetching Pexels image for user-added word:", e);
+    }
+
+    const [created] = await db
+      .insert(word)
+      .values({
+        term: lowered,
+        definition,
         phonetic: null,
         audioUrl: null,
-      }).returning();
-    }
+        imageUrl: imageUrl ?? null,
+      })
+      .returning();
 
-    // Create userWordProgress entry if it doesn't exist
-    const [existingProgress] = await db
-      .select()
-      .from(userWordProgress)
-      .where(and(eq(userWordProgress.userId, userId), eq(userWordProgress.wordId, existing.wordId)));
-
-    if (!existingProgress) {
-      await db.insert(userWordProgress).values({
-        userId,
-        wordId: existing.wordId,
-        status: "new",
-        timesSeen: 0,
-        lastSeenAt: null,
-      });
-    }
-
-    return existing;
+    return created;
   }
 
   async seedData(): Promise<void> {

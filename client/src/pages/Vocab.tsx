@@ -1,16 +1,26 @@
 import { Layout } from "@/components/Layout";
 import { WordCard } from "@/components/WordCard";
 import { useWords } from "@/hooks/use-words";
-import { Search, Filter } from "lucide-react";
+import { useVocabLists, useVocabListWords, useCreateVocabList } from "@/hooks/use-vocab-lists";
+import { Search, Filter, ChevronDown, Plus } from "lucide-react";
 import { useState } from "react";
+import { CreateVocabListDialog } from "@/components/CreateVocabListDialog";
 
 export default function Vocab() {
   const { data: words, isLoading, isError, error } = useWords();
+  const { data: lists } = useVocabLists();
+  const createList = useCreateVocabList();
+
   const [search, setSearch] = useState("");
+  const [selectedListId, setSelectedListId] = useState<number | null>(null);
+  const { data: listWords } = useVocabListWords(selectedListId ?? undefined);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   console.log("Vocab page - words data:", words);
 
-  const filteredWords = words?.filter(w => 
+  const sourceWords = selectedListId ? listWords : words;
+
+  const filteredWords = sourceWords?.filter((w: any) => 
     w.term.toLowerCase().includes(search.toLowerCase()) || 
     w.definition.toLowerCase().includes(search.toLowerCase())
   );
@@ -22,8 +32,8 @@ export default function Vocab() {
 
   return (
     <Layout title="Vocabulary">
-      {/* Search Bar */}
-      <div className="sticky top-0 bg-background/95 backdrop-blur z-10 py-2 -mx-4 px-4 mb-4 border-b border-border/50">
+      {/* Top Bar: Search + My Lists */}
+      <div className="sticky top-0 bg-background/95 backdrop-blur z-10 py-2 -mx-4 px-4 mb-4 border-b border-border/50 flex flex-col gap-2">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input 
@@ -35,6 +45,42 @@ export default function Vocab() {
           />
           <button className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-background rounded-lg transition-colors text-muted-foreground">
             <Filter className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* My Lists selector */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              My Lists
+            </span>
+            <div className="relative">
+              <select
+                value={selectedListId ?? ""}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSelectedListId(value ? Number(value) : null);
+                }}
+                className="pl-3 pr-8 py-1.5 rounded-full bg-secondary/60 border border-border/60 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none"
+              >
+                <option value="">All Words</option>
+                {lists?.map((list) => (
+                  <option key={list.vocabListId} value={list.vocabListId}>
+                    {list.name}{list.wordCount !== undefined ? ` (${list.wordCount})` : ""}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-3 h-3 text-muted-foreground absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+          </div>
+
+          <button
+          type="button"
+          onClick={() => setShowCreateDialog(true)}
+            className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80 px-3 py-1 rounded-full border border-primary/40 bg-primary/5"
+          >
+            <Plus className="w-3 h-3" />
+            Create New List
           </button>
         </div>
       </div>
@@ -77,6 +123,14 @@ export default function Vocab() {
           ))
         )}
       </div>
+      <CreateVocabListDialog
+        open={showCreateDialog}
+        onClose={() => setShowCreateDialog(false)}
+        onCreate={async (name) => {
+          const created = await createList.mutateAsync(name);
+          setSelectedListId(created.vocabListId);
+        }}
+      />
     </Layout>
   );
 }

@@ -60,6 +60,30 @@ CREATE TABLE word (
   CONSTRAINT uq_word_term UNIQUE (term)
 );
 
+CREATE TABLE vocab_list (
+  vocab_list_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id       INT NOT NULL,
+  name          VARCHAR(150) NOT NULL,
+  created_at    TIMESTAMP NOT NULL DEFAULT NOW(),
+  CONSTRAINT fk_vocab_list_user
+    FOREIGN KEY (user_id) REFERENCES "user"(user_id)
+    ON DELETE CASCADE
+);
+
+CREATE TABLE vocab_list_word (
+  vocab_list_word_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  vocab_list_id      INT NOT NULL,
+  word_id            INT NOT NULL,
+  created_at         TIMESTAMP NOT NULL DEFAULT NOW(),
+  CONSTRAINT fk_vlw_list
+    FOREIGN KEY (vocab_list_id) REFERENCES vocab_list(vocab_list_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_vlw_word
+    FOREIGN KEY (word_id) REFERENCES word(word_id)
+    ON DELETE CASCADE,
+  CONSTRAINT uq_vlw_list_word UNIQUE (vocab_list_id, word_id)
+);
+
 CREATE TABLE user_word_progress (
   user_word_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   user_id      INT NOT NULL,
