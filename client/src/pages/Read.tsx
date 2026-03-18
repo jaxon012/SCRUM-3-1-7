@@ -124,7 +124,7 @@ export default function Read() {
               initial={{ opacity: 0, y: 100 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 100 }}
-              className="fixed bottom-0 left-0 right-0 p-4 pb-6 z-50 flex justify-center pointer-events-none"
+              className="fixed bottom-24 left-0 right-0 p-4 pb-6 z-50 flex justify-center pointer-events-none"
             >
               <div className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-3xl shadow-2xl border border-border/50 p-6 pointer-events-auto relative max-h-[80vh] overflow-y-auto">
                 <button 
