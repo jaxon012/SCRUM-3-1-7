@@ -58,6 +58,21 @@ export const userReadingProgress = pgTable("user_reading_progress", {
   completedAt: timestamp("completed_at"),
 });
 
+// Vocab list tables
+export const vocabList = pgTable("vocab_list", {
+  vocabListId: serial("vocab_list_id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  name: varchar("name", { length: 150 }).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const vocabListWord = pgTable("vocab_list_word", {
+  vocabListWordId: serial("vocab_list_word_id").primaryKey(),
+  vocabListId: integer("vocab_list_id").notNull(),
+  wordId: integer("word_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // For backward compatibility with existing components that expect "words" or "word" type
 export const words = word;
 
@@ -67,6 +82,8 @@ export const insertUserWordProgressSchema = createInsertSchema(userWordProgress)
 export const insertPassageSchema = createInsertSchema(passage).omit({ passageId: true });
 export const insertPassageWordSchema = createInsertSchema(passageWord).omit({ passageWordId: true });
 export const insertUserReadingProgressSchema = createInsertSchema(userReadingProgress).omit({ userReadingId: true });
+export const insertVocabListSchema = createInsertSchema(vocabList).omit({ vocabListId: true, createdAt: true });
+export const insertVocabListWordSchema = createInsertSchema(vocabListWord).omit({ vocabListWordId: true, createdAt: true });
 
 export type User = typeof user.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -88,3 +105,5 @@ export interface Passage extends PassageRaw {
 export type InsertPassage = z.infer<typeof insertPassageSchema>;
 export type PassageWord = typeof passageWord.$inferSelect;
 export type UserReadingProgress = typeof userReadingProgress.$inferSelect;
+export type VocabList = typeof vocabList.$inferSelect;
+export type VocabListWord = typeof vocabListWord.$inferSelect;

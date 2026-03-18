@@ -56,6 +56,75 @@ export async function registerRoutes(
     res.json(words);
   });
 
+  // Vocab list routes
+  app.get(api.vocabLists.list.path, async (req, res) => {
+    const userId = req.session.userId || 1;
+    const lists = await storage.getVocabLists(userId);
+    res.json(lists);
+  });
+
+  app.post(api.vocabLists.create.path, async (req, res) => {
+    const userId = req.session.userId || 1;
+    const { name } = req.body || {};
+    if (!name || typeof name !== "string" || !name.trim()) {
+      return res.status(400).json({ message: "Name is required" });
+    }
+    const list = await storage.createVocabList(userId, name.trim());
+    res.status(201).json(list);
+  });
+
+  app.get(api.vocabLists.words.list.path, async (req, res) => {
+    const userId = req.session.userId || 1;
+    const listId = Number(req.params.listId);
+    if (!listId || Number.isNaN(listId)) {
+      return res.status(400).json({ message: "Invalid listId" });
+    }
+    const words = await storage.getVocabListWords(userId, listId);
+    if (!words.length) {
+      const lists = await storage.getVocabLists(userId);
+      if (!lists.find((l) => l.vocabListId === listId)) {
+        return res.status(404).json({ message: "List not found" });
+      }
+    }
+    res.json(words);
+  });
+
+  app.post(api.vocabLists.words.add.path, async (req, res) => {
+    const userId = req.session.userId || 1;
+    const listId = Number(req.params.listId);
+    const { wordId } = req.body || {};
+    if (!listId || Number.isNaN(listId) || !wordId || Number.isNaN(Number(wordId))) {
+      return res.status(400).json({ message: "Invalid listId or wordId" });
+    }
+
+    const result = await storage.addWordToList(userId, listId, Number(wordId));
+    if (!result) {
+      return res.status(404).json({ message: "List not found" });
+    }
+    res.status(201).json(result);
+  });
+
+  app.post(api.vocabLists.words.addFromTerm.path, async (req, res) => {
+    const userId = req.session.userId || 1;
+    const listId = Number(req.params.listId);
+    const { term } = req.body || {};
+    if (!listId || Number.isNaN(listId) || !term || typeof term !== "string") {
+      return res.status(400).json({ message: "Invalid listId or term" });
+    }
+
+    try {
+      const word = await storage.createOrGetWordFromTerm(term);
+      const result = await storage.addWordToList(userId, listId, word.wordId);
+      if (!result) {
+        return res.status(404).json({ message: "List not found" });
+      }
+      res.status(201).json(result);
+    } catch (error) {
+      console.error("Error adding word from term:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.patch(api.wordProgress.update.path, async (req, res) => {
     try {
       const userWordId = Number(req.params.userWordId);

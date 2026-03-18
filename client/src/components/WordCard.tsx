@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Sparkles, Check } from "lucide-react";
 import { AudioPlayer } from "./AudioPlayer";
 import { useUpdateWordProgress } from "@/hooks/use-word-progress";
+import { useVocabLists, useAddWordToVocabList, useCreateVocabList } from "@/hooks/use-vocab-lists";
+import { CreateVocabListDialog } from "./CreateVocabListDialog";
 import type { Word } from "@shared/schema";
 
 interface WordCardProps {
@@ -13,6 +15,11 @@ interface WordCardProps {
 export function WordCard({ word, index }: WordCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { mutate: updateProgress, isPending } = useUpdateWordProgress();
+  const { data: lists } = useVocabLists();
+  const addWordToList = useAddWordToVocabList();
+  const createList = useCreateVocabList();
+  const [selectedListId, setSelectedListId] = useState<number | "">("");
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const userWordId = word.userWordProgress?.userWordId;
   const status = word.userWordProgress?.status || "new";
@@ -93,7 +100,7 @@ export function WordCard({ word, index }: WordCardProps) {
             transition={{ duration: 0.2 }}
             className="bg-secondary/30 border-t border-border/50"
           >
-            <div className="p-4 space-y-3">
+            <div className="p-4 space-y-4 pb-6">
               <div className="space-y-1">
                 <span className="text-xs font-semibold text-primary uppercase tracking-wider">Definition</span>
                 <p className="text-sm text-foreground/80 leading-relaxed">{word.definition}</p>
@@ -130,23 +137,92 @@ export function WordCard({ word, index }: WordCardProps) {
                 </div>
               )}
 
-              <button
-                onClick={handleMarkAsMastered}
-                disabled={isMastered || isPending}
-                className={`
-                  w-full py-2 px-4 rounded-xl font-semibold text-sm transition-all
-                  ${isMastered
-                    ? "bg-green-500/20 text-green-600 cursor-default"
-                    : "bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50"
-                  }
-                `}
-              >
-                {isPending ? "Updating..." : isMastered ? "✓ Mastered" : "Mark as Mastered"}
-              </button>
+              {/* Actions */}
+              <div className="space-y-3">
+                <button
+                  onClick={handleMarkAsMastered}
+                  disabled={isMastered || isPending}
+                  className={`
+                    w-full py-2 px-4 rounded-xl font-semibold text-sm transition-all
+                    ${isMastered
+                      ? "bg-green-500/20 text-green-600 cursor-default"
+                      : "bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50"
+                    }
+                  `}
+                >
+                  {isPending ? "Updating..." : isMastered ? "✓ Mastered" : "Mark as Mastered"}
+                </button>
+
+                {/* Add to vocab lists */}
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Add to Vocab List
+                  </p>
+                  <select
+                    value={selectedListId}
+                    onChange={(e) =>
+                      setSelectedListId(e.target.value ? Number(e.target.value) : "")
+                    }
+                    className="w-full px-3 py-2 rounded-xl bg-secondary/50 border border-border/60 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  >
+                    <option value="">Choose a list…</option>
+                    {lists?.map((list) => (
+                      <option key={list.vocabListId} value={list.vocabListId}>
+                        {list.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (!selectedListId) return;
+                      try {
+                        await addWordToList.mutateAsync({
+                          listId: Number(selectedListId),
+                          wordId: word.wordId,
+                        });
+                      } catch (err) {
+                        console.error(err);
+                      }
+                    }}
+                    disabled={!selectedListId || addWordToList.isPending}
+                    className="w-full px-3 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold disabled:opacity-50"
+                  >
+                    {addWordToList.isPending ? "Adding..." : "Add to Vocab"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowCreateDialog(true);
+                    }}
+                    className="w-full text-xs font-semibold text-primary mt-1 hover:text-primary/80"
+                  >
+                    + Create New List
+                  </button>
+                </div>
+              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+      <CreateVocabListDialog
+        open={showCreateDialog}
+        onClose={() => setShowCreateDialog(false)}
+        onCreate={async (name) => {
+          const created = await createList.mutateAsync(name);
+          setSelectedListId(created.vocabListId);
+          try {
+            await addWordToList.mutateAsync({
+              listId: created.vocabListId,
+              wordId: word.wordId,
+            });
+          } catch (err) {
+            console.error(err);
+          }
+        }}
+      />
     </motion.div>
   );
 }
