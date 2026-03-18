@@ -327,45 +327,50 @@ export class DatabaseStorage implements IStorage {
   }
 
   async seedData(): Promise<void> {
-    // If seed.sql already populated the DB, do nothing.
     const existingUsers = await db.select().from(user);
     const existingWords = await db.select().from(word);
     const existingPassages = await db.select().from(passage);
 
-    if (
-      existingUsers.length > 0 ||
-      existingWords.length > 0 ||
-      existingPassages.length > 0
-    ) {
-      return;
+    const existingUserWordProgress = await db.select().from(userWordProgress);
+
+    // Seed base rows only when the DB is empty, but always backfill missing images.
+    const shouldSeedUsers = existingUsers.length === 0;
+    const shouldSeedWords = existingWords.length === 0;
+    const shouldSeedPassages = existingPassages.length === 0;
+    const shouldSeedProgress = existingUserWordProgress.length === 0;
+
+    if (shouldSeedUsers) {
+      await db.execute(sql`
+        INSERT INTO "user" (email, display_name, username, password)
+        VALUES
+          ('tom@example.com', 'Tom Sawyer', 'TomSawyer', 'cantreadyet'),
+          ('xiexie@example.com', 'Xie Xie', 'XieXie', 'thankyou')
+      `);
     }
 
-    // Users
-    await db.execute(sql`
-      INSERT INTO "user" (email, display_name, username, password)
-      VALUES
-        ('tom@example.com', 'Tom Sawyer', 'TomSawyer', 'cantreadyet'),
-        ('xiexie@example.com', 'Xie Xie', 'XieXie', 'thankyou')
-    `);
+    if (shouldSeedWords) {
+      await db.execute(sql`
+        INSERT INTO word (term, definition, phonetic, audio_url)
+        VALUES
+          ('application', 'A formal request to an authority for something.', '/ˌapləˈkāSH(ə)n/', 'https://example.com/application.mp3'),
+          ('work', 'Activity involving mental or physical effort done in order to achieve a purpose or result.', '/wərk/', 'https://example.com/work.mp3'),
+          ('employee', 'A person employed for wages or salary, especially at non-executive level.', '/əmˈploiē/', 'https://example.com/employee.mp3'),
+          ('hours', 'A period of time equal to sixty minutes.', '/ˈou(ə)rz/', 'https://example.com/hours.mp3'),
+          ('shift', 'One of two or more recurring periods in which different groups of workers do the same jobs in relay.', '/SHift/', 'https://example.com/shift.mp3'),
+          ('matey', 'A familiar and sometimes hostile form of address, especially to a stranger.', '/ˈmādē/', 'https://example.com/matey.mp3')
+      `);
+    }
 
-    // Words
-    await db.execute(sql`
-      INSERT INTO word (term, definition, phonetic, audio_url)
-      VALUES
-        ('application', 'A formal request to an authority for something.', '/ˌapləˈkāSH(ə)n/', 'https://example.com/application.mp3'),
-        ('work', 'Activity involving mental or physical effort done in order to achieve a purpose or result.', '/wərk/', 'https://example.com/work.mp3'),
-        ('employee', 'A person employed for wages or salary, especially at non-executive level.', '/əmˈploiē/', 'https://example.com/employee.mp3'),
-        ('hours', 'A period of time equal to sixty minutes.', '/ˈou(ə)rz/', 'https://example.com/hours.mp3'),
-        ('shift', 'One of two or more recurring periods in which different groups of workers do the same jobs in relay.', '/SHift/', 'https://example.com/shift.mp3'),
-        ('matey', 'A familiar and sometimes hostile form of address, especially to a stranger.', '/ˈmādē/', 'https://example.com/matey.mp3')
-    `);
-
-    // Look up and store images for each word using Pexels
+    // Always backfill missing images (including previously seeded words).
     const seededWords = await db.select().from(word);
-    for (const w of seededWords) {
-      try {
-        if (w.imageUrl) continue;
+    const missingImages = seededWords.filter((w) => !w.imageUrl);
 
+    // Avoid hammering the external API on every restart if many images are missing.
+    const MAX_BACKFILL_PER_START = 25;
+    const toBackfill = missingImages.slice(0, MAX_BACKFILL_PER_START);
+
+    for (const w of toBackfill) {
+      try {
         // Build a richer search query using both term and definition
         const combinedQuery = `${w.term} - ${w.definition}`;
         const imageUrl = await fetchPexelsImageUrl(combinedQuery);
@@ -380,18 +385,22 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    // Basic progress for Tom
-    await db.execute(sql`
-      INSERT INTO user_word_progress (user_id, word_id, status, times_seen, last_seen_at)
-      SELECT 1, word_id, 'new', 0, NULL FROM word
-    `);
+    if (shouldSeedProgress) {
+      // Basic progress for Tom
+      await db.execute(sql`
+        INSERT INTO user_word_progress (user_id, word_id, status, times_seen, last_seen_at)
+        SELECT 1, word_id, 'new', 0, NULL FROM word
+      `);
+    }
 
-    // Passage
-    await db.execute(sql`
-      INSERT INTO passage (title, body_text, reading_level, audio_url)
-      VALUES
-        ('Treasure Island Excerpt', 'Well, then, said he, this is the berth for me. Here you, matey, he cried to the man who trundled the barrow; bring up alongside and help up my chest. I''ll stay here a bit, he continued.', 2, 'https://example.com/treasure_island.mp3')
-    `);
+    if (shouldSeedPassages) {
+      // Passage
+      await db.execute(sql`
+        INSERT INTO passage (title, body_text, reading_level, audio_url)
+        VALUES
+          ('Treasure Island Excerpt', 'Well, then, said he, this is the berth for me. Here you, matey, he cried to the man who trundled the barrow; bring up alongside and help up my chest. I''ll stay here a bit, he continued.', 2, 'https://example.com/treasure_island.mp3')
+      `);
+    }
   }
 }
 
