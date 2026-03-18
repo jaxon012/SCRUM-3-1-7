@@ -96,6 +96,13 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
                     className="w-full py-2 px-4 bg-primary text-white rounded-lg text-sm hover:opacity-90">
                     Log In
                   </button>
+                  <Link
+                    href="/signup"
+                    className="text-xs text-primary text-center mt-1 hover:underline"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    Create an account
+                  </Link>
                 </div>
               )}
             </div>
