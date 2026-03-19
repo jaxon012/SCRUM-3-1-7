@@ -2,7 +2,7 @@ import { Layout } from "@/components/Layout";
 import { useReadingPassages } from "@/hooks/use-reading";
 import { motion, AnimatePresence } from "framer-motion";
 import { Book, Clock, X } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { useWords } from "@/hooks/use-words";
 import { useVocabLists, useCreateVocabList, useAddWordToVocabList } from "@/hooks/use-vocab-lists";
@@ -126,7 +126,7 @@ export default function Read() {
               exit={{ opacity: 0, y: 100 }}
               className="fixed inset-0 z-50 flex items-end justify-center pointer-events-none px-4 pb-24"
             >
-              <div className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-3xl shadow-2xl border border-border/50 p-6 pointer-events-auto relative max-h-[80vh] overflow-y-auto">
+              <div className="bg-white dark:bg-zinc-900 w-full max-w-lg md:max-w-xl rounded-3xl shadow-2xl border border-border/50 p-6 pointer-events-auto relative max-h-[80vh] overflow-y-auto">
                 <button 
                   onClick={() => setSelectedWord(null)}
                   className="absolute top-4 right-4 p-1 hover:bg-secondary rounded-full transition-colors"
@@ -137,7 +137,9 @@ export default function Read() {
                 <div className="flex items-start gap-4 mb-4">
                   <div className="flex-1">
                     <h3 className="text-2xl font-bold font-display capitalize mb-1">{selectedWord}</h3>
-                    <p className="text-sm text-muted-foreground italic">noun • /prəˌnʌnsiˈeɪʃn/</p>
+                    <p className="text-sm text-muted-foreground italic">
+                      {matchingWord?.phonetic ? `noun • ${matchingWord.phonetic}` : "noun"}
+                    </p>
                   </div>
                   <AudioPlayer text={selectedWord} className="bg-primary/10 text-primary w-12 h-12" />
                 </div>
@@ -146,13 +148,13 @@ export default function Read() {
                   <div>
                     <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Definition</h4>
                     <p className="text-foreground/90">
-                      The act or process of doing something; specific content would be fetched from a dictionary API in a real app.
+                      {matchingWord?.definition ?? "Pick a word and practice it to see its meaning."}
                     </p>
                   </div>
                   
                   <div className="bg-secondary/50 p-3 rounded-xl">
                     <p className="text-sm italic text-muted-foreground">
-                      "This is an example sentence using the word <span className="text-primary font-medium">{selectedWord}</span>."
+                      "Try using <span className="text-primary font-medium">{selectedWord}</span> in a sentence you’d say today."
                     </p>
                   </div>
                 </div>

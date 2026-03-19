@@ -45,7 +45,7 @@ export function CreateVocabListDialog({ open, onClose, onCreate }: CreateVocabLi
           >
             <form
               onSubmit={handleSubmit}
-              className="w-full max-w-md bg-background rounded-2xl shadow-2xl border border-border/60 p-6 space-y-4"
+              className="w-full max-w-lg bg-background rounded-2xl shadow-2xl border border-border/60 p-6 space-y-4"
             >
               <h2 className="text-lg font-semibold">Create New Vocab List</h2>
               <p className="text-sm text-muted-foreground">

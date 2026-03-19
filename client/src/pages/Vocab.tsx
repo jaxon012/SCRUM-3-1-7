@@ -3,7 +3,7 @@ import { WordCard } from "@/components/WordCard";
 import { useWords } from "@/hooks/use-words";
 import { useVocabLists, useVocabListWords, useCreateVocabList } from "@/hooks/use-vocab-lists";
 import { Search, Filter, ChevronDown, Plus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CreateVocabListDialog } from "@/components/CreateVocabListDialog";
 
 export default function Vocab() {
@@ -17,6 +17,16 @@ export default function Vocab() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   console.log("Vocab page - words data:", words);
+
+  useEffect(() => {
+    // Used by Home's "Practice this word" button.
+    const key = "lingoquest_featured_word";
+    const featured = localStorage.getItem(key);
+    if (featured) {
+      setSearch(featured);
+      localStorage.removeItem(key);
+    }
+  }, []);
 
   const sourceWords = selectedListId ? listWords : words;
 
