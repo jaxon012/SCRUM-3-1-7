@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, varchar, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 export * from "./models/chat";
@@ -73,6 +73,13 @@ export const vocabListWord = pgTable("vocab_list_word", {
   vocabListId: integer("vocab_list_id").notNull(),
   wordId: integer("word_id").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// User streak table
+export const userStreak = pgTable("user_streak", {
+  userId: integer("user_id").primaryKey(),
+  streakCount: integer("streak_count").notNull().default(0),
+  lastActivityDate: date("last_activity_date"),
 });
 
 // For backward compatibility with existing components that expect "words" or "word" type

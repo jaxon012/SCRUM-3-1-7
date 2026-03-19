@@ -1,19 +1,35 @@
 import { Layout } from "@/components/Layout";
 import { Link } from "wouter";
-import { ArrowRightIcon, FlameIcon, TrophyIcon, CalendarIcon, StarIcon } from "@/components/icons";
+import { useQuery } from "@tanstack/react-query";
+import {
+  ArrowRightIcon,
+  FlameIcon,
+  TrophyIcon,
+  CalendarIcon,
+  StarIcon,
+} from "@/components/icons";
 
 export default function Home() {
+  const { data: streakData } = useQuery<{ streakCount: number }>({
+    queryKey: ["/api/streak"],
+    queryFn: () => fetch("/api/streak").then((r) => r.json()),
+  });
+  const streakCount = streakData?.streakCount ?? 0;
+  const streakPct = Math.round((streakCount / 7) * 100);
+
   return (
     <Layout>
       {/* Hero Progress Section */}
       <section className="mb-8">
-        <div
-          className="bg-gradient-to-br from-primary to-accent rounded-3xl p-6 text-white shadow-lg shadow-primary/25 relative overflow-hidden"
-        >
+        <div className="bg-gradient-to-br from-primary to-accent rounded-3xl p-6 text-white shadow-lg shadow-primary/25 relative overflow-hidden">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <p className="text-white/80 text-sm font-medium mb-1">Weekly Streak</p>
-              <h2 className="text-3xl font-display font-bold">4/7 Days</h2>
+              <p className="text-white/80 text-sm font-medium mb-1">
+                Weekly Streak
+              </p>
+              <h2 className="text-3xl font-display font-bold">
+                {streakCount}/7 Days
+              </h2>
             </div>
             <div className="bg-white/20 p-3 rounded-2xl">
               <FlameIcon className="w-8 h-8 text-orange-300 fill-orange-300" />
@@ -23,10 +39,13 @@ export default function Home() {
           <div className="space-y-2">
             <div className="flex justify-between text-xs font-medium text-white/70">
               <span>Keep going!</span>
-              <span>57%</span>
+              <span>{streakPct}%</span>
             </div>
             <div className="h-3 bg-black/20 rounded-full overflow-hidden">
-              <div className="h-full bg-white rounded-full" style={{ width: "57%" }} />
+              <div
+                className="h-full bg-white rounded-full"
+                style={{ width: `${streakPct}%` }}
+              />
             </div>
           </div>
         </div>
@@ -42,7 +61,9 @@ export default function Home() {
               </div>
               <div>
                 <h3 className="font-bold text-foreground">Daily Vocab</h3>
-                <p className="text-xs text-muted-foreground mt-1">20 new words</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  20 new words
+                </p>
               </div>
             </div>
           </div>
@@ -56,7 +77,9 @@ export default function Home() {
               </div>
               <div>
                 <h3 className="font-bold text-foreground">Practice</h3>
-                <p className="text-xs text-muted-foreground mt-1">Reading & Quiz</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Reading & Quiz
+                </p>
               </div>
             </div>
           </div>
@@ -67,7 +90,12 @@ export default function Home() {
       <section>
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-bold text-lg">Continue Journey</h3>
-          <Link href="/adventure" className="text-sm text-primary font-medium hover:underline">View All</Link>
+          <Link
+            href="/adventure"
+            className="text-sm text-primary font-medium hover:underline"
+          >
+            View All
+          </Link>
         </div>
 
         <Link href="/adventure">
@@ -87,8 +115,12 @@ export default function Home() {
               <div className="p-5">
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <h3 className="font-bold text-lg text-foreground">The Lost Temple</h3>
-                    <p className="text-sm text-muted-foreground">Interactive Story</p>
+                    <h3 className="font-bold text-lg text-foreground">
+                      The Lost Temple
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Interactive Story
+                    </p>
                   </div>
                   <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/30 group-hover:scale-110 transition-transform">
                     <ArrowRightIcon className="w-4 h-4" />
