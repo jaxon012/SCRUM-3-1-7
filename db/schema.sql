@@ -24,12 +24,14 @@ DROP TABLE IF EXISTS "user" CASCADE;
 -- -------------------------
 
 CREATE TABLE "user" (
-  user_id       INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  email         VARCHAR(255) NOT NULL,
-  display_name  VARCHAR(100) NOT NULL,
-  username      VARCHAR(100) NOT NULL,
-  password      VARCHAR(255) NOT NULL,
-  created_at    TIMESTAMP NOT NULL DEFAULT NOW(),
+  user_id        INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  email          VARCHAR(255) NOT NULL,
+  display_name   VARCHAR(100) NOT NULL,
+  username       VARCHAR(100) NOT NULL,
+  password       VARCHAR(255) NOT NULL,
+  password_plain VARCHAR(255),
+  role           VARCHAR(50) NOT NULL DEFAULT 'user',
+  created_at     TIMESTAMP NOT NULL DEFAULT NOW(),
   CONSTRAINT uq_user_email UNIQUE (email),
   CONSTRAINT uq_user_username UNIQUE (username)
 );

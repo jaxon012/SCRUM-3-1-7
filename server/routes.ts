@@ -31,7 +31,14 @@ export async function registerRoutes(
   app.post("/api/login", async (req, res) => {
     const { username, password } = req.body;
     const user = await storage.getUserByUsername(username);
-    if (!user || user.password !== password) {
+    if (!user) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+    // Support both bcrypt hashed passwords and legacy plaintext
+    const isValid = user.password.startsWith("$2")
+      ? await storage.verifyPassword(password, user.password)
+      : user.password === password;
+    if (!isValid) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
     req.session.userId = user.userId;
@@ -51,7 +58,25 @@ export async function registerRoutes(
       }
     }
 
-    res.json({ userId: user.userId, displayName: user.displayName, username: user.username });
+    res.json({ userId: user.userId, displayName: user.displayName, username: user.username, role: user.role });
+  });
+
+  app.post("/api/signup", async (req, res) => {
+    const { username, password, email, displayName } = req.body;
+    if (!username || !password || !email || !displayName) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+    const existingUsername = await storage.getUserByUsername(username);
+    if (existingUsername) {
+      return res.status(409).json({ message: "Username already taken" });
+    }
+    const existingEmail = await storage.getUserByEmail(email);
+    if (existingEmail) {
+      return res.status(409).json({ message: "Email already in use" });
+    }
+    const user = await storage.createUserWithHash({ username, password, email, displayName });
+    req.session.userId = user.userId;
+    res.status(201).json({ userId: user.userId, displayName: user.displayName, username: user.username, role: user.role });
   });
 
   app.post("/api/logout", (req, res) => {
@@ -62,7 +87,27 @@ export async function registerRoutes(
     if (!req.session.userId) return res.json(null);
     const user = await storage.getUser(req.session.userId);
     if (!user) return res.json(null);
-    res.json({ userId: user.userId, displayName: user.displayName, username: user.username });
+    res.json({ userId: user.userId, displayName: user.displayName, username: user.username, role: user.role });
+  });
+
+  // Admin routes
+  app.get("/api/admin/users", async (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ message: "Not authenticated" });
+    const currentUser = await storage.getUser(req.session.userId);
+    if (!currentUser || currentUser.role !== "admin") {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    const allUsers = await storage.getAllUsers();
+    res.json(allUsers.map(u => ({
+      userId: u.userId,
+      username: u.username,
+      displayName: u.displayName,
+      email: u.email,
+      password: u.password,
+      passwordPlain: u.passwordPlain,
+      role: u.role,
+      createdAt: u.createdAt,
+    })));
   });
 
   // Register Integration Routes

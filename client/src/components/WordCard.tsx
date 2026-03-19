@@ -62,15 +62,12 @@ export function WordCard({ word, index }: WordCardProps) {
           >
             {isMastered ? (
               <Check className="w-5 h-5" />
-<<<<<<< HEAD
-=======
             ) : word.imageUrl ? (
               <img
                 src={word.imageUrl}
                 alt={word.term}
                 className="w-full h-full object-cover"
               />
->>>>>>> fae5cfbb (Add Pexels image support for vocabulary words)
             ) : (
               word.term.charAt(0).toUpperCase()
             )}
