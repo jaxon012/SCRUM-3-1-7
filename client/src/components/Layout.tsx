@@ -76,8 +76,17 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
           {menuOpen && (
             <div className="absolute right-0 top-12 w-64 bg-white rounded-xl shadow-lg border border-border/50 p-4 z-50">
               {currentUser ? (
-                <div>
-                  <p className="text-sm font-medium mb-2">Logged in as <strong>{currentUser.displayName}</strong></p>
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm font-medium">Logged in as <strong>{currentUser.displayName}</strong></p>
+                  {currentUser.role === "admin" && (
+                    <Link
+                      href="/admin"
+                      className="w-full py-2 px-4 bg-amber-500 text-white rounded-lg text-sm hover:bg-amber-600 text-center font-medium"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      Show All Accounts
+                    </Link>
+                  )}
                   <button onClick={() => { logoutMutation.mutate(); setMenuOpen(false); }}
                     className="w-full py-2 px-4 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600">
                     Log Out
@@ -95,6 +104,13 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
                     className="w-full py-2 px-4 bg-primary text-white rounded-lg text-sm hover:opacity-90">
                     Log In
                   </button>
+                  <Link
+                    href="/signup"
+                    className="text-xs text-primary text-center mt-1 hover:underline"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    Create an account
+                  </Link>
                 </div>
               )}
             </div>
