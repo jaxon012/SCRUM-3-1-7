@@ -38,11 +38,11 @@ export default function Home() {
         <div className="md:col-span-7">
           {/* Hero Progress Section */}
           <section className="mb-8">
-            <div className="bg-gradient-to-br from-primary to-accent rounded-3xl p-6 text-white shadow-lg shadow-primary/25 relative overflow-hidden max-w-2xl">
+            <div className="bg-gradient-to-br from-primary to-accent rounded-3xl p-6 text-white shadow-lg shadow-primary/25 relative overflow-hidden w-full">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <p className="text-white/80 text-sm font-medium mb-1">Weekly Streak</p>
-                  <h2 className="text-3xl font-display font-bold">
+                  <p className="text-white/80 text-base font-medium mb-1">Weekly Streak</p>
+                  <h2 className="text-4xl leading-none font-display font-bold">
                     {streakCount}/7 Days
                   </h2>
                 </div>
@@ -144,7 +144,7 @@ export default function Home() {
         </div>
 
         {/* Right (30%) */}
-        <div className="md:col-span-3">
+        <div className="hidden md:block md:col-span-3">
           <section className="md:sticky md:top-[110px] self-start">
             <div className="rounded-3xl p-6 border border-border/50 shadow-sm bg-gradient-to-br from-teal-500/15 via-amber-500/10 to-secondary/30">
               <div className="flex items-center justify-between mb-3 gap-3">

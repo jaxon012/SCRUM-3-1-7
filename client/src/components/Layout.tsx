@@ -62,7 +62,7 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
                 </Link>
               )}
               {title ? (
-                <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
+                <h1 className="text-3xl md:text-4xl font-bold leading-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
                   {title}
                 </h1>
               ) : (
@@ -71,8 +71,8 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
                     L
                   </div>
                   <div className="flex flex-col leading-tight">
-                    <span className="font-display font-bold text-2xl">LingoQuest</span>
-                    <span className="text-xs text-muted-foreground hidden sm:block">
+                    <span className="font-display font-bold text-3xl md:text-4xl">LingoQuest</span>
+                    <span className="text-sm text-muted-foreground">
                       Learn daily with reading + voice
                     </span>
                   </div>
@@ -152,7 +152,7 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
           </div>
 
           {/* Desktop navigation row */}
-          <div className="hidden md:flex items-center gap-2 pt-1">
+          <div className="hidden md:flex w-full items-center gap-3 pt-1">
             <DesktopNavLink href="/" icon={HomeIcon} label="Home" active={location === "/"} />
             <DesktopNavLink href="/vocab" icon={BookOpenIcon} label="Vocab" active={location === "/vocab"} />
             <DesktopNavLink href="/read" icon={MicIcon} label="Read" active={location === "/read"} />
@@ -194,12 +194,12 @@ function DesktopNavLink({
     <Link
       href={href}
       className={`
-        flex items-center gap-3 py-2 px-3 rounded-xl transition-colors
+        flex-1 items-center justify-center flex gap-3 py-3 px-4 rounded-xl transition-colors
         ${active ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"}
       `}
     >
       <Icon className="w-5 h-5" strokeWidth={active ? 2.5 : 2} />
-      <span className={`text-sm font-medium ${active ? "text-primary" : "text-muted-foreground"}`}>{label}</span>
+      <span className={`text-sm md:text-base font-semibold ${active ? "text-primary" : "text-muted-foreground"}`}>{label}</span>
     </Link>
   );
 }
