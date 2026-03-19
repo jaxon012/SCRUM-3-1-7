@@ -8,6 +8,7 @@ const Vocab = lazy(() => import("@/pages/Vocab"));
 const Read = lazy(() => import("@/pages/Read"));
 const Adventure = lazy(() => import("@/pages/Adventure"));
 const Signup = lazy(() => import("@/pages/Signup"));
+const Admin = lazy(() => import("@/pages/Admin"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 const LazyToaster = lazy(() => import("@/components/ui/toaster").then(m => ({ default: m.Toaster })));
@@ -22,6 +23,7 @@ function Router() {
         <Route path="/read" component={Read} />
         <Route path="/adventure" component={Adventure} />
         <Route path="/signup" component={Signup} />
+        <Route path="/admin" component={Admin} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>

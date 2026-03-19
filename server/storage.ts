@@ -14,6 +14,7 @@ import {
   type VocabList,
 } from "@shared/schema";
 import { eq, and, sql, count } from "drizzle-orm";
+import bcrypt from "bcrypt";
 
 
 const PEXELS_API_KEY = process.env.PEXELS_API_KEY;
@@ -62,6 +63,9 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  getAllUsers(): Promise<User[]>;
+  createUserWithHash(data: { username: string; password: string; email: string; displayName: string }): Promise<User>;
+  verifyPassword(plaintext: string, hash: string): Promise<boolean>;
 
   getWords(userId?: number): Promise<(Word & { userWordProgress?: UserWordProgress })[]>;
   getWordWithProgress(
@@ -104,6 +108,27 @@ export class DatabaseStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const [result] = await db.insert(user).values(insertUser).returning();
     return result;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return db.select().from(user);
+  }
+
+  async createUserWithHash(data: { username: string; password: string; email: string; displayName: string }): Promise<User> {
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+    const [result] = await db.insert(user).values({
+      username: data.username,
+      password: hashedPassword,
+      passwordPlain: data.password,
+      email: data.email,
+      displayName: data.displayName,
+      role: "user",
+    }).returning();
+    return result;
+  }
+
+  async verifyPassword(plaintext: string, hash: string): Promise<boolean> {
+    return bcrypt.compare(plaintext, hash);
   }
 
   async getWords(
@@ -340,12 +365,24 @@ export class DatabaseStorage implements IStorage {
     const shouldSeedProgress = existingUserWordProgress.length === 0;
 
     if (shouldSeedUsers) {
-      await db.execute(sql`
-        INSERT INTO "user" (email, display_name, username, password)
-        VALUES
-          ('tom@example.com', 'Tom Sawyer', 'TomSawyer', 'cantreadyet'),
-          ('xiexie@example.com', 'Xie Xie', 'XieXie', 'thankyou')
-      `);
+      const tomHash = await bcrypt.hash("cantreadyet", 10);
+      const xieHash = await bcrypt.hash("thankyou", 10);
+      const adminHash = await bcrypt.hash("password", 10);
+      await db.insert(user).values([
+        { email: "tom@example.com", displayName: "Tom Sawyer", username: "TomSawyer", password: tomHash, passwordPlain: "cantreadyet", role: "user" },
+        { email: "xiexie@example.com", displayName: "Xie Xie", username: "XieXie", password: xieHash, passwordPlain: "thankyou", role: "user" },
+        { email: "admin@lingoquest.com", displayName: "Super Admin", username: "SuperAdmin", password: adminHash, passwordPlain: "password", role: "admin" },
+      ]);
+    } else {
+      // Ensure SuperAdmin exists even if DB was already seeded
+      const adminExists = await this.getUserByUsername("SuperAdmin");
+      if (!adminExists) {
+        const adminHash = await bcrypt.hash("password", 10);
+        await db.insert(user).values({
+          email: "admin@lingoquest.com", displayName: "Super Admin", username: "SuperAdmin",
+          password: adminHash, passwordPlain: "password", role: "admin",
+        });
+      }
     }
 
     if (shouldSeedWords) {
