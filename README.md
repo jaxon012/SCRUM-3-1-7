@@ -38,13 +38,10 @@ graph TD
 ## Prerequisites
 Before you begin, ensure you have the following installed:
 - **Node.js**: v18 or higher
-- **PostgreSQL**: v14 or higher
-- **psql**: Command-line interface for PostgreSQL (usually installed with PostgreSQL)
 
 Verify your installation:
 ```bash
 node -v
-psql --version
 ```
 
 ## Installation and Setup
@@ -55,59 +52,24 @@ psql --version
     npm install
     ```
 
-2.  **Install client dependencies**  
-    ```bash
-    cd client
-    npm install
-    cd ..
-    ```
-
-3.  **Set up the database**  
-    Create and initialize the `language_app` database:
-    ```bash
-    psql -U postgres -h localhost -c "CREATE DATABASE language_app;"
-    psql -U postgres -h localhost -d language_app -f db/schema.sql
-    ```
-    The backend `seedData()` function will populate users, words (with images), and passages on first run; you do **not** need to run `db/seed.sql` manually.
-
-4.  **Configure environment variables**  
-    Create a `.env` file in the project root:
-    ```env
-    DATABASE_URL=postgresql://postgres:admin@localhost:5432/language_app
-    OPENAI_API_KEY=your_openai_api_key_here
-    PEXELS_API_KEY=your_pexels_api_key_here
-    ```
-    - `DATABASE_URL` should match your local Postgres credentials.
-    - `PEXELS_API_KEY` is optional but recommended; it allows the app to fetch and store example images for vocabulary words during seeding.
-
 ## Running the Application (development)
 
 Backend and frontend run as separate dev servers:
 
-1.  **Start the backend (Express API)**  
-    From the project root:
+1.  **Start the application**  
+    From the project root (SCRUM-3-1-7):
     ```bash
     npm run dev
     ```
-    This serves the API on `http://localhost:5000`.
 
-2.  **Start the frontend (Vite dev server)**  
-    In a second terminal:
-    ```bash
-    cd client
-    npm run dev -- --port 5174
-    ```
-    Vite will print a URL such as `http://localhost:5174/`.
-
-3.  **Access the application**  
-    - Open your browser to the frontend: `http://localhost:5174/`
-    - The frontend will communicate with the backend via `/api/...` on port `5000`.
+2.  **Access the application**  
+    - Open your browser and navigate to `http://localhost:5001`.
 
 ## Verifying the Vertical Slice: Mark as Mastered
 
 To verify the complete vertical slice (frontend button → backend update → database change → UI refresh), follow these steps:
 
-1.  **Launch the App**: Open the application in your browser at [http://localhost:5000](http://localhost:5000).
+1.  **Launch the App**: Open the application in your browser at [http://localhost:5001](http://localhost:5001).
 
 2.  **Navigate to Daily Vocab**: Click on the "Vocabulary" page in the navigation. You should see a list of words with their definitions (e.g., "application", "work", "employee").
 
@@ -126,7 +88,7 @@ To verify the complete vertical slice (frontend button → backend update → da
     - The word should still show as "✓ Mastered", proving the change persisted in the database
 
 7.  **Database Inspection (Optional)**:
-    - Open a terminal and connect to the database: `psql -d language_app`
+    - Connect to the database using your preferred PostgreSQL client
     - Run the following query to see all word progress records:
       ```sql
       SELECT user_id, word_id, status, times_seen, last_seen_at 
@@ -141,4 +103,3 @@ To verify the complete vertical slice (frontend button → backend update → da
 - **Backend**: Express route that accepts PATCH request and updates database
 - **Database**: PostgreSQL table (`user_word_progress`) stores and persists the changes
 - **Data Flow**: User click → API request → Database update → Query invalidation → UI re-render → Persistence on refresh
-

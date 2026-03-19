@@ -1,10 +1,12 @@
 import { Layout } from "@/components/Layout";
 import { useReadingPassages } from "@/hooks/use-reading";
 import { motion, AnimatePresence } from "framer-motion";
-import { Book, Clock, Volume2, X } from "lucide-react";
-import { useState } from "react";
+import { Book, Clock, X } from "lucide-react";
+import { useState, useMemo } from "react";
 import { AudioPlayer } from "@/components/AudioPlayer";
-import { useAddWordToVocab } from "@/hooks/use-add-to-vocab";
+import { useWords } from "@/hooks/use-words";
+import { useVocabLists, useCreateVocabList, useAddWordToVocabList } from "@/hooks/use-vocab-lists";
+import { CreateVocabListDialog } from "@/components/CreateVocabListDialog";
 import type { Passage } from "@shared/schema";
 
 // Interactive word component
@@ -25,7 +27,12 @@ function ClickableWord({ word, onClick }: { word: string; onClick: (w: string) =
 export default function Read() {
   const { data: passages, isLoading } = useReadingPassages();
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
-  const { mutate: addToVocab, isPending: isAdding, isSuccess: addedSuccess } = useAddWordToVocab();
+  const { data: vocabWords } = useWords();
+  const { data: lists } = useVocabLists();
+  const createList = useCreateVocabList();
+  const addWordToList = useAddWordToVocabList();
+  const [selectedListId, setSelectedListId] = useState<number | "">("");
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   // For prototype, we'll just use the first passage or a fallback
   const passage = (passages?.[0] as Passage | undefined) || {
@@ -45,6 +52,12 @@ export default function Read() {
   const words = content.split(" ");
   const imageUrl = ((passage as any).imageUrl || passage.audioUrl || "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&q=80") as string;
   const level = ((passage as any).level || passage.readingLevel?.toString() || "Beginner") as string;
+
+  const matchingWord = useMemo(() => {
+    if (!selectedWord || !vocabWords) return null;
+    const clean = selectedWord.toLowerCase();
+    return (vocabWords as any[]).find((w) => w.term.toLowerCase() === clean) || null;
+  }, [selectedWord, vocabWords]);
 
   return (
     <Layout title="Reading Practice">
@@ -111,9 +124,9 @@ export default function Read() {
               initial={{ opacity: 0, y: 100 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 100 }}
-              className="fixed bottom-0 left-0 right-0 p-4 z-50 flex justify-center pointer-events-none"
+              className="fixed inset-0 z-50 flex items-end justify-center pointer-events-none px-4 pb-24"
             >
-              <div className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-3xl shadow-2xl border border-border/50 p-6 pointer-events-auto relative overflow-y-auto max-h-[80vh] pb-24">
+              <div className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-3xl shadow-2xl border border-border/50 p-6 pointer-events-auto relative max-h-[80vh] overflow-y-auto">
                 <button 
                   onClick={() => setSelectedWord(null)}
                   className="absolute top-4 right-4 p-1 hover:bg-secondary rounded-full transition-colors"
@@ -144,18 +157,78 @@ export default function Read() {
                   </div>
                 </div>
 
-                <button
-                  onClick={() => selectedWord && addToVocab(selectedWord)}
-                  disabled={isAdding || addedSuccess}
-                  className="w-full mt-6 bg-primary text-primary-foreground font-bold py-3 rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-60"
-                >
-                  {addedSuccess ? "✓ Added to Vocab!" : isAdding ? "Adding..." : "Add to Flashcards"}
-                </button>
+                {/* Add to Vocab */}
+                <div className="mt-6 space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Add to Vocab
+                  </p>
+                  <div className="space-y-2">
+                    <select
+                      value={selectedListId}
+                      onChange={(e) => setSelectedListId(e.target.value ? Number(e.target.value) : "")}
+                      className="w-full px-3 py-2 rounded-xl bg-secondary/50 border border-border/60 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    >
+                      <option value="">Choose a list…</option>
+                      {lists?.map((list) => (
+                        <option key={list.vocabListId} value={list.vocabListId}>
+                          {list.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!selectedWord || !selectedListId) return;
+                        try {
+                          if (matchingWord) {
+                            await addWordToList.mutateAsync({
+                              listId: Number(selectedListId),
+                              wordId: matchingWord.wordId,
+                            });
+                          } else {
+                            await addWordToList.mutateAsync({
+                              listId: Number(selectedListId),
+                              term: selectedWord,
+                            });
+                          }
+                        } catch (err) {
+                          console.error(err);
+                        }
+                      }}
+                      disabled={!selectedListId || addWordToList.isPending}
+                      className="w-full px-3 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold disabled:opacity-50"
+                    >
+                      {addWordToList.isPending ? "Adding..." : "Add to Vocab"}
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateDialog(true)}
+                    className="w-full text-xs font-semibold text-primary mt-2 hover:text-primary/80"
+                  >
+                    + Create New List
+                  </button>
+                </div>
               </div>
             </motion.div>
           </>
         )}
       </AnimatePresence>
+      <CreateVocabListDialog
+        open={showCreateDialog}
+        onClose={() => setShowCreateDialog(false)}
+        onCreate={async (name) => {
+          const created = await createList.mutateAsync(name);
+          setSelectedListId(created.vocabListId);
+          if (matchingWord) {
+            await addWordToList.mutateAsync({
+              listId: created.vocabListId,
+              wordId: matchingWord.wordId,
+            });
+          }
+        }}
+      />
     </Layout>
   );
 }
