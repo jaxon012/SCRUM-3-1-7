@@ -6,6 +6,9 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import { registerAudioRoutes } from "./replit_integrations/audio";
 import { registerImageRoutes } from "./replit_integrations/image";
+import { db } from "./db";
+import { userStreak } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 declare module "express-session" {
   interface SessionData {
@@ -32,6 +35,22 @@ export async function registerRoutes(
       return res.status(401).json({ message: "Invalid credentials" });
     }
     req.session.userId = user.userId;
+
+    // Update streak on login
+    const today = new Date().toISOString().split("T")[0];
+    const [existing] = await db.select().from(userStreak).where(eq(userStreak.userId, user.userId));
+    if (!existing) {
+      await db.insert(userStreak).values({ userId: user.userId, streakCount: 1, lastActivityDate: today });
+    } else {
+      const last = existing.lastActivityDate ? new Date(existing.lastActivityDate) : null;
+      const diffDays = last ? Math.floor((Date.now() - last.getTime()) / 86400000) : 999;
+      if (diffDays === 1) {
+        await db.update(userStreak).set({ streakCount: existing.streakCount + 1, lastActivityDate: today }).where(eq(userStreak.userId, user.userId));
+      } else if (diffDays >= 2) {
+        await db.update(userStreak).set({ streakCount: 0, lastActivityDate: today }).where(eq(userStreak.userId, user.userId));
+      }
+    }
+
     res.json({ userId: user.userId, displayName: user.displayName, username: user.username });
   });
 
@@ -167,6 +186,12 @@ export async function registerRoutes(
     const userId = req.session.userId || 1;
     const result = await storage.addWordToVocab(term.trim(), userId);
     res.json({ wordId: result.wordId, term: result.term });
+  });
+
+  app.get("/api/streak", async (req, res) => {
+    if (!req.session.userId) return res.json({ streakCount: 0 });
+    const [row] = await db.select().from(userStreak).where(eq(userStreak.userId, req.session.userId));
+    res.json({ streakCount: row?.streakCount ?? 0 });
   });
 
   // Seed data on startup
