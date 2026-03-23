@@ -36,38 +36,53 @@ export default function Home() {
       <div className="grid gap-6 md:grid-cols-10">
         {/* Left (70%) */}
         <div className="md:col-span-7">
-          {/* Hero Progress Section */}
+          {/* Featured Adventure */}
           <section className="mb-8">
-            <div className="bg-gradient-to-br from-primary to-accent rounded-3xl p-6 text-white shadow-lg shadow-primary/25 relative overflow-hidden w-full">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <p className="text-white/80 text-base font-medium mb-1">Weekly Streak</p>
-                  <h2 className="text-4xl leading-none font-display font-bold">
-                    {streakCount}/7 Days
-                  </h2>
-                </div>
-                <div className="bg-white/20 p-3 rounded-2xl">
-                  <FlameIcon className="w-8 h-8 text-orange-300 fill-orange-300" />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs font-medium text-white/70">
-                  <span>Keep going!</span>
-                  <span>{streakPct}%</span>
-                </div>
-                <div className="h-3 bg-black/20 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-white rounded-full"
-                    style={{ width: `${streakPct}%` }}
-                  />
-                </div>
-              </div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-lg">Continue Journey</h3>
+              <Link
+                href="/adventure"
+                className="text-sm text-primary font-medium hover:underline"
+              >
+                View All
+              </Link>
             </div>
+
+            <Link href="/adventure">
+              <div className="cursor-pointer active:scale-[0.99] hover:scale-[1.01] transition-transform">
+                <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-md group relative">
+                  <div className="h-44 relative overflow-hidden">
+                    <img
+                      src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&q=80"
+                      alt="Current scene"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    />
+                    <div className="absolute top-3 right-3 bg-black/40 backdrop-blur-md px-2 py-1 rounded-lg text-xs font-medium text-white border border-white/10">
+                      Level 3
+                    </div>
+                  </div>
+
+                  <div className="p-5">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h3 className="font-bold text-lg text-foreground">The Lost Temple</h3>
+                        <p className="text-sm text-muted-foreground">Interactive Story</p>
+                      </div>
+                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/30 group-hover:scale-110 transition-transform">
+                        <ArrowRightIcon className="w-4 h-4" />
+                      </div>
+                    </div>
+                    <div className="w-full bg-secondary rounded-full h-1.5 mt-3">
+                      <div className="bg-primary h-1.5 rounded-full w-[35%]" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Link>
           </section>
 
           {/* Quick Actions Grid */}
-          <section className="grid grid-cols-2 gap-4 mb-8">
+          <section className="grid grid-cols-2 gap-4">
             <Link href="/vocab">
               <div className="cursor-pointer group active:scale-[0.98] hover:scale-[1.02] transition-transform">
                 <div className="bg-card hover:bg-card/80 border border-border/50 rounded-2xl p-5 shadow-sm transition-all h-full flex flex-col justify-between">
@@ -94,56 +109,39 @@ export default function Home() {
               </div>
             </Link>
           </section>
-
-          {/* Featured Adventure */}
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-lg">Continue Journey</h3>
-              <Link
-                href="/adventure"
-                className="text-sm text-primary font-medium hover:underline"
-              >
-                View All
-              </Link>
-            </div>
-
-            <Link href="/adventure">
-              <div className="cursor-pointer active:scale-[0.99] hover:scale-[1.01] transition-transform">
-                <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-md group relative">
-                  <div className="h-32 bg-secondary relative overflow-hidden">
-                    {/* Placeholder for dynamic scene image - using gradient for now */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-gray-800 to-gray-900 group-hover:scale-105 transition-transform duration-700" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <TrophyIcon className="w-12 h-12 text-white/20" />
-                    </div>
-                    <div className="absolute top-3 right-3 bg-black/40 backdrop-blur-md px-2 py-1 rounded-lg text-xs font-medium text-white border border-white/10">
-                      Level 3
-                    </div>
-                  </div>
-
-                  <div className="p-5">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <h3 className="font-bold text-lg text-foreground">The Lost Temple</h3>
-                        <p className="text-sm text-muted-foreground">Interactive Story</p>
-                      </div>
-                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/30 group-hover:scale-110 transition-transform">
-                        <ArrowRightIcon className="w-4 h-4" />
-                      </div>
-                    </div>
-                    <div className="w-full bg-secondary rounded-full h-1.5 mt-3">
-                      <div className="bg-primary h-1.5 rounded-full w-[35%]" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Link>
-          </section>
         </div>
 
         {/* Right (30%) */}
-        <div className="hidden md:block md:col-span-3">
-          <section className="md:sticky md:top-[110px] self-start">
+        <div className="hidden md:block md:col-span-3 pt-[2.75rem]">
+          <section className="md:sticky md:top-[110px] self-start space-y-4">
+            {/* Streak Card */}
+            <div className="bg-gradient-to-br from-primary to-accent rounded-3xl p-6 text-white shadow-lg shadow-primary/25 relative overflow-hidden">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <p className="text-white/80 text-base font-medium mb-1">Weekly Streak</p>
+                  <h2 className="text-4xl leading-none font-display font-bold">
+                    {streakCount}/7 Days
+                  </h2>
+                </div>
+                <div className="bg-white/20 p-3 rounded-2xl">
+                  <FlameIcon className="w-8 h-8 text-orange-300 fill-orange-300" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs font-medium text-white/70">
+                  <span>Keep going!</span>
+                  <span>{streakPct}%</span>
+                </div>
+                <div className="h-3 bg-black/20 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-white rounded-full"
+                    style={{ width: `${streakPct}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Featured Word */}
             <div className="rounded-3xl p-6 border border-border/50 shadow-sm bg-gradient-to-br from-[#C97B4B]/15 via-[#B8A832]/10 to-secondary/30">
               <div className="flex items-center justify-between mb-3 gap-3">
                 <span className="inline-flex items-center rounded-full bg-background/60 border border-border/60 px-3 py-1 text-xs font-bold text-foreground">
