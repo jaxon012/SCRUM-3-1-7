@@ -54,7 +54,11 @@ export default function Home() {
                   <div className="h-44 relative overflow-hidden">
                     <img
                       src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&q=80"
-                      alt="Current scene"
+                      alt="A mystical temple scene from the adventure story"
+                      width={800}
+                      height={176}
+                      fetchPriority="high"
+                      loading="eager"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     />
                     <div className="absolute top-3 right-3 bg-black/40 backdrop-blur-md px-2 py-1 rounded-lg text-xs font-medium text-white border border-white/10">

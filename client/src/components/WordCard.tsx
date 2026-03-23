@@ -39,7 +39,7 @@ export function WordCard({ word, index }: WordCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
+      transition={{ delay: Math.min(index * 0.03, 0.15) }}
       className={`
         bg-card rounded-2xl border border-border/50 shadow-sm
         hover:shadow-md hover:border-primary/20 transition-all duration-300
@@ -66,6 +66,9 @@ export function WordCard({ word, index }: WordCardProps) {
               <img
                 src={word.imageUrl}
                 alt={word.term}
+                width={40}
+                height={40}
+                loading="lazy"
                 className="w-full h-full object-cover"
               />
             ) : (
@@ -112,6 +115,9 @@ export function WordCard({ word, index }: WordCardProps) {
                   <img
                     src={word.imageUrl}
                     alt={word.term}
+                    width={640}
+                    height={256}
+                    loading="lazy"
                     className="w-full max-h-64 object-cover rounded-xl border border-border/60"
                   />
                 </div>
@@ -163,6 +169,7 @@ export function WordCard({ word, index }: WordCardProps) {
                     onChange={(e) =>
                       setSelectedListId(e.target.value ? Number(e.target.value) : "")
                     }
+                    aria-label="Choose a vocabulary list"
                     className="w-full px-3 py-2 rounded-xl bg-secondary/50 border border-border/60 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
                   >
                     <option value="">Choose a list…</option>

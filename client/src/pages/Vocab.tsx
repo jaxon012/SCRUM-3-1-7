@@ -42,7 +42,6 @@ export default function Vocab() {
     }));
   };
 
-  console.log("Vocab page - words data:", words);
 
   useEffect(() => {
     // Used by Home's "Practice this word" button.
@@ -102,6 +101,7 @@ export default function Vocab() {
           />
           <button
             onClick={() => setShowSortFilter(true)}
+            aria-label="Filter and sort words"
             className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-background rounded-lg transition-colors text-muted-foreground"
           >
             <Filter className="w-4 h-4" />
@@ -121,6 +121,7 @@ export default function Vocab() {
                   const value = e.target.value;
                   setSelectedListId(value ? Number(value) : null);
                 }}
+                aria-label="Filter by vocabulary list"
                 className="pl-3 pr-8 py-1.5 rounded-full bg-secondary/60 border border-border/60 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none"
               >
                 <option value="">All Words</option>
@@ -137,7 +138,7 @@ export default function Vocab() {
           <button
           type="button"
           onClick={() => setShowCreateDialog(true)}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80 px-3 py-1 rounded-full border border-primary/40 bg-primary/5"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-foreground hover:text-foreground/80 px-3 py-1 rounded-full border border-foreground/30 bg-foreground/5"
           >
             <Plus className="w-3 h-3" />
             Create New List
@@ -162,6 +163,7 @@ export default function Vocab() {
       </div>
 
       {/* Words List */}
+      <h2 className="sr-only">Words</h2>
       <div className="space-y-3">
         {isError ? (
           <div className="text-center py-12 text-destructive">
