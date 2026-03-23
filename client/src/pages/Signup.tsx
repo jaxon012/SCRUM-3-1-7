@@ -38,8 +38,9 @@ export default function Signup() {
   });
 
   return (
-    <Layout title="Create Account" showBack>
+    <Layout showBack backOnly>
       <div className="space-y-4">
+        <h1 className="text-2xl font-bold text-foreground">Create Account</h1>
         <p className="text-sm text-muted-foreground">
           Create an account to save your progress.
         </p>
