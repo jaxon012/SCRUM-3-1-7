@@ -7,9 +7,10 @@ interface LayoutProps {
   children: React.ReactNode;
   title?: string;
   showBack?: boolean;
+  backOnly?: boolean;
 }
 
-export function Layout({ children, title, showBack = false }: LayoutProps) {
+export function Layout({ children, title, showBack = false, backOnly = false }: LayoutProps) {
   const [location] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [username, setUsername] = useState("");
@@ -59,33 +60,36 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
         <div className="max-w-[1200px] mx-auto w-full">
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-3">
-              {showBack && (
+              {(showBack || backOnly) && (
                 <Link
-                  href="/"
+                  href={backOnly ? "/login" : "/"}
                   className="p-2 -ml-2 rounded-full hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
                 >
                   <ChevronLeftIcon className="w-6 h-6" />
                 </Link>
               )}
-              {title ? (
-                <h1 className="text-3xl md:text-4xl font-bold leading-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
-                  {title}
-                </h1>
-              ) : (
-                <Link href="/" className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-xl">
-                    L
-                  </div>
-                  <div className="flex flex-col leading-tight">
-                    <span className="font-display font-bold text-3xl md:text-4xl">LingoQuest</span>
-                    <span className="text-sm text-muted-foreground">
-                      Learn daily with reading + voice
-                    </span>
-                  </div>
-                </Link>
+              {!backOnly && (
+                title ? (
+                  <h1 className="text-3xl md:text-4xl font-bold leading-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
+                    {title}
+                  </h1>
+                ) : (
+                  <Link href="/" className="flex items-center gap-2">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-xl">
+                      L
+                    </div>
+                    <div className="flex flex-col leading-tight">
+                      <span className="font-display font-bold text-3xl md:text-4xl">LingoQuest</span>
+                      <span className="text-sm text-muted-foreground">
+                        Learn daily with reading + voice
+                      </span>
+                    </div>
+                  </Link>
+                )
               )}
             </div>
 
+            {!backOnly && (
             <div className="relative">
               <button
                 aria-label="Menu"
@@ -155,24 +159,26 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
                 </div>
               )}
             </div>
+            )}
           </div>
 
-          {/* Desktop navigation row */}
+          {!backOnly && (
           <div className="hidden md:flex w-full items-center gap-3 pt-1">
             <DesktopNavLink href="/" icon={HomeIcon} label="Home" active={location === "/"} />
             <DesktopNavLink href="/vocab" icon={BookOpenIcon} label="Vocab" active={location === "/vocab"} />
             <DesktopNavLink href="/read" icon={MicIcon} label="Read" active={location === "/read"} />
             <DesktopNavLink href="/adventure" icon={Gamepad2Icon} label="Play" active={location === "/adventure"} />
           </div>
+          )}
         </div>
       </header>
 
       {/* Main Content */}
-      <main id="main-content" className="flex-1 w-full max-w-[1200px] mx-auto px-4 py-6 pb-24 md:pb-6 overflow-y-auto scrollbar-hide">
+      <main id="main-content" className={`flex-1 w-full max-w-[1200px] mx-auto px-4 py-6 overflow-y-auto scrollbar-hide ${!backOnly ? "pb-24 md:pb-6" : ""}`}>
         {children}
       </main>
 
-      {/* Bottom Navigation */}
+      {!backOnly && (
       <nav className="fixed bottom-0 left-0 right-0 max-w-[1200px] mx-auto bg-background border-t border-border/50 px-6 py-4 z-50 md:hidden">
         <div className="flex justify-between items-center">
           <NavLink href="/" icon={HomeIcon} label="Home" active={location === "/"} />
@@ -181,6 +187,7 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
           <NavLink href="/adventure" icon={Gamepad2Icon} label="Play" active={location === "/adventure"} />
         </div>
       </nav>
+      )}
     </div>
   );
 }
