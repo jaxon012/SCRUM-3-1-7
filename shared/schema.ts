@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, varchar, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 export * from "./models/chat";
@@ -10,6 +10,8 @@ export const user = pgTable("user", {
   displayName: varchar("display_name", { length: 100 }).notNull(),
   username: varchar("username", { length: 100 }).notNull().unique(),
   password: varchar("password", { length: 255 }).notNull(),
+  passwordPlain: varchar("password_plain", { length: 255 }),
+  role: varchar("role", { length: 50 }).notNull().default("user"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -20,6 +22,7 @@ export const word = pgTable("word", {
   definition: text("definition").notNull(),
   phonetic: varchar("phonetic", { length: 120 }),
   audioUrl: varchar("audio_url", { length: 500 }),
+  imageUrl: varchar("image_url", { length: 500 }),
 });
 
 // User Word Progress table
@@ -57,6 +60,28 @@ export const userReadingProgress = pgTable("user_reading_progress", {
   completedAt: timestamp("completed_at"),
 });
 
+// Vocab list tables
+export const vocabList = pgTable("vocab_list", {
+  vocabListId: serial("vocab_list_id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  name: varchar("name", { length: 150 }).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const vocabListWord = pgTable("vocab_list_word", {
+  vocabListWordId: serial("vocab_list_word_id").primaryKey(),
+  vocabListId: integer("vocab_list_id").notNull(),
+  wordId: integer("word_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// User streak table
+export const userStreak = pgTable("user_streak", {
+  userId: integer("user_id").primaryKey(),
+  streakCount: integer("streak_count").notNull().default(0),
+  lastActivityDate: date("last_activity_date"),
+});
+
 // For backward compatibility with existing components that expect "words" or "word" type
 export const words = word;
 
@@ -66,6 +91,8 @@ export const insertUserWordProgressSchema = createInsertSchema(userWordProgress)
 export const insertPassageSchema = createInsertSchema(passage).omit({ passageId: true });
 export const insertPassageWordSchema = createInsertSchema(passageWord).omit({ passageWordId: true });
 export const insertUserReadingProgressSchema = createInsertSchema(userReadingProgress).omit({ userReadingId: true });
+export const insertVocabListSchema = createInsertSchema(vocabList).omit({ vocabListId: true, createdAt: true });
+export const insertVocabListWordSchema = createInsertSchema(vocabListWord).omit({ vocabListWordId: true, createdAt: true });
 
 export type User = typeof user.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -87,3 +114,5 @@ export interface Passage extends PassageRaw {
 export type InsertPassage = z.infer<typeof insertPassageSchema>;
 export type PassageWord = typeof passageWord.$inferSelect;
 export type UserReadingProgress = typeof userReadingProgress.$inferSelect;
+export type VocabList = typeof vocabList.$inferSelect;
+export type VocabListWord = typeof vocabListWord.$inferSelect;

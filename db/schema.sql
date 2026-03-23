@@ -24,12 +24,14 @@ DROP TABLE IF EXISTS "user" CASCADE;
 -- -------------------------
 
 CREATE TABLE "user" (
-  user_id       INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  email         VARCHAR(255) NOT NULL,
-  display_name  VARCHAR(100) NOT NULL,
-  username      VARCHAR(100) NOT NULL,
-  password      VARCHAR(255) NOT NULL,
-  created_at    TIMESTAMP NOT NULL DEFAULT NOW(),
+  user_id        INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  email          VARCHAR(255) NOT NULL,
+  display_name   VARCHAR(100) NOT NULL,
+  username       VARCHAR(100) NOT NULL,
+  password       VARCHAR(255) NOT NULL,
+  password_plain VARCHAR(255),
+  role           VARCHAR(50) NOT NULL DEFAULT 'user',
+  created_at     TIMESTAMP NOT NULL DEFAULT NOW(),
   CONSTRAINT uq_user_email UNIQUE (email),
   CONSTRAINT uq_user_username UNIQUE (username)
 );
@@ -56,7 +58,32 @@ CREATE TABLE word (
   definition  TEXT NOT NULL,
   phonetic    VARCHAR(120),
   audio_url   VARCHAR(500),
+  image_url   VARCHAR(500),
   CONSTRAINT uq_word_term UNIQUE (term)
+);
+
+CREATE TABLE vocab_list (
+  vocab_list_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id       INT NOT NULL,
+  name          VARCHAR(150) NOT NULL,
+  created_at    TIMESTAMP NOT NULL DEFAULT NOW(),
+  CONSTRAINT fk_vocab_list_user
+    FOREIGN KEY (user_id) REFERENCES "user"(user_id)
+    ON DELETE CASCADE
+);
+
+CREATE TABLE vocab_list_word (
+  vocab_list_word_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  vocab_list_id      INT NOT NULL,
+  word_id            INT NOT NULL,
+  created_at         TIMESTAMP NOT NULL DEFAULT NOW(),
+  CONSTRAINT fk_vlw_list
+    FOREIGN KEY (vocab_list_id) REFERENCES vocab_list(vocab_list_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_vlw_word
+    FOREIGN KEY (word_id) REFERENCES word(word_id)
+    ON DELETE CASCADE,
+  CONSTRAINT uq_vlw_list_word UNIQUE (vocab_list_id, word_id)
 );
 
 CREATE TABLE user_word_progress (

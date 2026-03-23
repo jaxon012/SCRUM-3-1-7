@@ -1,35 +1,44 @@
 import { Switch, Route } from "wouter";
+import { lazy, Suspense } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
-import Vocab from "@/pages/Vocab";
-import Read from "@/pages/Read";
-import Adventure from "@/pages/Adventure";
-import Signup from "@/pages/Signup";
+
+const Vocab = lazy(() => import("@/pages/Vocab"));
+const Read = lazy(() => import("@/pages/Read"));
+const Adventure = lazy(() => import("@/pages/Adventure"));
+const Signup = lazy(() => import("@/pages/Signup"));
+const Admin = lazy(() => import("@/pages/Admin"));
+const NotFound = lazy(() => import("@/pages/not-found"));
+
+const LazyToaster = lazy(() => import("@/components/ui/toaster").then(m => ({ default: m.Toaster })));
+const LazyTooltipProvider = lazy(() => import("@/components/ui/tooltip").then(m => ({ default: m.TooltipProvider })));
 
 function Router() {
   return (
-    <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/vocab" component={Vocab} />
-      <Route path="/read" component={Read} />
-      <Route path="/adventure" component={Adventure} />
-      <Route path="/signup" component={Signup} />
-      <Route component={NotFound} />
-    </Switch>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <Switch>
+        <Route path="/" component={Home} />
+        <Route path="/vocab" component={Vocab} />
+        <Route path="/read" component={Read} />
+        <Route path="/adventure" component={Adventure} />
+        <Route path="/signup" component={Signup} />
+        <Route path="/admin" component={Admin} />
+        <Route component={NotFound} />
+      </Switch>
+    </Suspense>
   );
 }
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <Suspense>
+        <LazyTooltipProvider>
+          <LazyToaster />
+          <Router />
+        </LazyTooltipProvider>
+      </Suspense>
     </QueryClientProvider>
   );
 }

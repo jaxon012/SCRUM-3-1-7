@@ -1,10 +1,8 @@
-# Language Learning Adventure
+## Language Learning Adventure
 
-## March 10th Update - How to get running: Create a branch off of main. To run the app, do the following terminal commands in VS code:
-- npm install
-- PORT=5001 npm run dev
+### How to get running (local development)
 
-  Then, open up localhost:5001 and you should be see it. For some reaosn it wouldn't let me go on port 5000.
+Create a branch off of `main`, then follow the steps below.
 
 ## App Summary
 Language Learning Adventure is a gamified language learning platform designed to make vocabulary acquisition and reading practice engaging and interactive. The application targets language learners who want to supplement their studies with daily challenges, reading comprehension exercises, and an immersive text-based adventure game. Users can track their progress through daily streaks, learn new words with flashcards, and practice reading with level-appropriate passages. The product uniquely combines traditional learning tools with AI-driven voice interaction in its Adventure mode to simulate real-world language usage.
@@ -38,57 +36,40 @@ graph TD
 ```
 
 ## Prerequisites
-Before you begin, ensure you have the following software installed on your system:
-- **Node.js**: (v18 or higher) - [Download & Install Node.js](https://nodejs.org/)
-- **PostgreSQL**: (v14 or higher) - [Download & Install PostgreSQL](https://www.postgresql.org/download/)
-- **psql**: Command-line interface for PostgreSQL (usually installed with PostgreSQL).
+Before you begin, ensure you have the following installed:
+- **Node.js**: v18 or higher
 
-Verify your installation by running the following commands in your terminal:
+Verify your installation:
 ```bash
 node -v
-psql --version
 ```
 
 ## Installation and Setup
 
-1.  **Install Application Dependencies**:
-    Navigate to the project directory and install the required Node.js packages:
+1.  **Install root dependencies**  
+    From the project root:
     ```bash
     npm install
     ```
 
-2.  **Set Up the Database**:
-    Create a new PostgreSQL database for the application and initialize it with the schema:
-    ```bash
-    createdb language_app
-    psql -d language_app -f db/schema.sql
-    psql -d language_app -f db/seed.sql
-    ```
+## Running the Application (development)
 
-3.  **Configure Environment Variables**:
-    Create a `.env` file in the root directory and add your database connection string and any other required keys (e.g., OpenAI API Key).
-    ```env
-    DATABASE_URL=postgresql://username:password@localhost:5432/language_app
-    OPENAI_API_KEY=your_openai_api_key_here
-    ```
+Backend and frontend run as separate dev servers:
 
-## Running the Application
-
-1.  **Start the Development Server**:
-    Run the following command to start both the backend server and frontend client:
+1.  **Start the application**  
+    From the project root (SCRUM-3-1-7):
     ```bash
     npm run dev
     ```
 
-2.  **Access the Application**:
-    Open your web browser and navigate to:
-    [http://localhost:5000](http://localhost:5000)
+2.  **Access the application**  
+    - Open your browser and navigate to `http://localhost:5001`.
 
 ## Verifying the Vertical Slice: Mark as Mastered
 
 To verify the complete vertical slice (frontend button → backend update → database change → UI refresh), follow these steps:
 
-1.  **Launch the App**: Open the application in your browser at [http://localhost:5000](http://localhost:5000).
+1.  **Launch the App**: Open the application in your browser at [http://localhost:5001](http://localhost:5001).
 
 2.  **Navigate to Daily Vocab**: Click on the "Vocabulary" page in the navigation. You should see a list of words with their definitions (e.g., "application", "work", "employee").
 
@@ -107,7 +88,7 @@ To verify the complete vertical slice (frontend button → backend update → da
     - The word should still show as "✓ Mastered", proving the change persisted in the database
 
 7.  **Database Inspection (Optional)**:
-    - Open a terminal and connect to the database: `psql -d language_app`
+    - Connect to the database using your preferred PostgreSQL client
     - Run the following query to see all word progress records:
       ```sql
       SELECT user_id, word_id, status, times_seen, last_seen_at 
@@ -122,4 +103,3 @@ To verify the complete vertical slice (frontend button → backend update → da
 - **Backend**: Express route that accepts PATCH request and updates database
 - **Database**: PostgreSQL table (`user_word_progress`) stores and persists the changes
 - **Data Flow**: User click → API request → Database update → Query invalidation → UI re-render → Persistence on refresh
-
