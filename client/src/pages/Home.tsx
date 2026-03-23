@@ -47,7 +47,7 @@ export default function Home() {
                   </h2>
                 </div>
                 <div className="bg-white/20 p-3 rounded-2xl">
-                  <FlameIcon className="w-8 h-8 text-orange-300 fill-orange-300" />
+                  <FlameIcon className="w-8 h-8 text-[#C97B4B] fill-[#C97B4B]" />
                 </div>
               </div>
 
@@ -71,7 +71,7 @@ export default function Home() {
             <Link href="/vocab">
               <div className="cursor-pointer group active:scale-[0.98] hover:scale-[1.02] transition-transform">
                 <div className="bg-card hover:bg-card/80 border border-border/50 rounded-2xl p-5 shadow-sm transition-all h-full flex flex-col justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center mb-4 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                  <div className="w-10 h-10 rounded-xl bg-[#B8A832]/20 text-[#6b5c10] flex items-center justify-center mb-4 group-hover:bg-[#B8A832]/40 group-hover:text-[#6b5c10] transition-colors">
                     <CalendarIcon className="w-5 h-5" />
                   </div>
                   <div>
@@ -84,7 +84,7 @@ export default function Home() {
             <Link href="/read">
               <div className="cursor-pointer group active:scale-[0.98] hover:scale-[1.02] transition-transform">
                 <div className="bg-card hover:bg-card/80 border border-border/50 rounded-2xl p-5 shadow-sm transition-all h-full flex flex-col justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-4 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+                  <div className="w-10 h-10 rounded-xl bg-[#6B9E78]/20 text-[#2d5c3a] flex items-center justify-center mb-4 group-hover:bg-[#6B9E78]/40 group-hover:text-[#2d5c3a] transition-colors">
                     <StarIcon className="w-5 h-5" />
                   </div>
                   <div>
@@ -144,7 +144,7 @@ export default function Home() {
         {/* Right (30%) */}
         <div className="hidden md:block md:col-span-3">
           <section className="md:sticky md:top-[110px] self-start">
-            <div className="rounded-3xl p-6 border border-border/50 shadow-sm bg-gradient-to-br from-teal-500/15 via-amber-500/10 to-secondary/30">
+            <div className="rounded-3xl p-6 border border-border/50 shadow-sm bg-gradient-to-br from-[#C97B4B]/15 via-[#B8A832]/10 to-secondary/30">
               <div className="flex items-center justify-between mb-3 gap-3">
                 <span className="inline-flex items-center rounded-full bg-background/60 border border-border/60 px-3 py-1 text-xs font-bold text-foreground">
                   NEW TODAY

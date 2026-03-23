@@ -97,17 +97,17 @@ export default function Vocab() {
 
       {/* Stats Header */}
       <div className="mb-6 flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-        <div className="bg-green-500/10 border border-green-500/20 px-4 py-3 rounded-2xl min-w-[120px]">
-          <p className="text-xs font-semibold text-green-600 mb-1">MASTERED</p>
-          <p className="text-2xl font-display font-bold text-green-700">{masteredCount}</p>
+        <div className="bg-[#6B9E78]/20 border border-[#6B9E78]/50 px-4 py-3 rounded-2xl min-w-[120px]">
+          <p className="text-xs font-semibold text-[#2d5c3a] mb-1">MASTERED</p>
+          <p className="text-2xl font-display font-bold text-[#2d5c3a]">{masteredCount}</p>
         </div>
-        <div className="bg-blue-500/10 border border-blue-500/20 px-4 py-3 rounded-2xl min-w-[120px]">
-          <p className="text-xs font-semibold text-blue-600 mb-1">LEARNED</p>
-          <p className="text-2xl font-display font-bold text-blue-700">{learnedCount}</p>
+        <div className="bg-[#B8A832]/20 border border-[#B8A832]/50 px-4 py-3 rounded-2xl min-w-[120px]">
+          <p className="text-xs font-semibold text-[#6b5c10] mb-1">LEARNED</p>
+          <p className="text-2xl font-display font-bold text-[#6b5c10]">{learnedCount}</p>
         </div>
-        <div className="bg-purple-500/10 border border-purple-500/20 px-4 py-3 rounded-2xl min-w-[120px]">
-          <p className="text-xs font-semibold text-purple-600 mb-1">NEW</p>
-          <p className="text-2xl font-display font-bold text-purple-700">{newCount}</p>
+        <div className="bg-[#C97B4B]/20 border border-[#C97B4B]/50 px-4 py-3 rounded-2xl min-w-[120px]">
+          <p className="text-xs font-semibold text-[#7a3a15] mb-1">NEW</p>
+          <p className="text-2xl font-display font-bold text-[#7a3a15]">{newCount}</p>
         </div>
       </div>
 
