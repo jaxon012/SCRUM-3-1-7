@@ -110,7 +110,7 @@ export default function Home() {
             <Link href="/adventure">
               <div className="cursor-pointer active:scale-[0.99] hover:scale-[1.01] transition-transform">
                 <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-md group relative">
-                  <div className="h-32 bg-gray-100 relative overflow-hidden">
+                  <div className="h-32 bg-secondary relative overflow-hidden">
                     {/* Placeholder for dynamic scene image - using gradient for now */}
                     <div className="absolute inset-0 bg-gradient-to-r from-gray-800 to-gray-900 group-hover:scale-105 transition-transform duration-700" />
                     <div className="absolute inset-0 flex items-center justify-center">
@@ -146,7 +146,7 @@ export default function Home() {
           <section className="md:sticky md:top-[110px] self-start">
             <div className="rounded-3xl p-6 border border-border/50 shadow-sm bg-gradient-to-br from-teal-500/15 via-amber-500/10 to-secondary/30">
               <div className="flex items-center justify-between mb-3 gap-3">
-                <span className="inline-flex items-center rounded-full bg-white/60 border border-white/40 px-3 py-1 text-xs font-bold text-foreground">
+                <span className="inline-flex items-center rounded-full bg-background/60 border border-border/60 px-3 py-1 text-xs font-bold text-foreground">
                   NEW TODAY
                 </span>
                 <span className="text-xs text-muted-foreground hidden lg:block">Practice with voice</span>

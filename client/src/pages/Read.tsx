@@ -126,7 +126,7 @@ export default function Read() {
               exit={{ opacity: 0, y: 100 }}
               className="fixed inset-0 z-50 flex items-end justify-center pointer-events-none px-4 pb-24"
             >
-              <div className="bg-white dark:bg-zinc-900 w-full max-w-lg md:max-w-xl rounded-3xl shadow-2xl border border-border/50 p-6 pointer-events-auto relative max-h-[80vh] overflow-y-auto">
+              <div className="bg-card w-full max-w-lg md:max-w-xl rounded-3xl shadow-2xl border border-border/50 p-6 pointer-events-auto relative max-h-[80vh] overflow-y-auto">
                 <button 
                   onClick={() => setSelectedWord(null)}
                   className="absolute top-4 right-4 p-1 hover:bg-secondary rounded-full transition-colors"
