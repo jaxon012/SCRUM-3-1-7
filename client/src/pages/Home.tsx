@@ -76,7 +76,6 @@ export default function Home() {
                   </div>
                   <div>
                     <h3 className="font-bold text-foreground">Daily Vocab</h3>
-                    <p className="text-xs text-muted-foreground mt-1">20 new words</p>
                   </div>
                 </div>
               </div>
@@ -90,7 +89,6 @@ export default function Home() {
                   </div>
                   <div>
                     <h3 className="font-bold text-foreground">Practice</h3>
-                    <p className="text-xs text-muted-foreground mt-1">Reading & Quiz</p>
                   </div>
                 </div>
               </div>
