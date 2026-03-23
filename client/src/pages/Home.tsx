@@ -53,7 +53,7 @@ export default function Home() {
                 <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-md group relative">
                   <div className="h-44 relative overflow-hidden">
                     <img
-                      src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&q=75&fm=webp"
+                      src="/adventure-hero.webp"
                       alt="A mystical temple scene from the adventure story"
                       width={800}
                       height={176}
