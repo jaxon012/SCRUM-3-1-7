@@ -47,7 +47,7 @@ export default function Home() {
                   </h2>
                 </div>
                 <div className="bg-white/20 p-3 rounded-2xl">
-                  <FlameIcon className="w-8 h-8 text-[#C97B4B] fill-[#C97B4B]" />
+                  <FlameIcon className="w-8 h-8 text-orange-300 fill-orange-300" />
                 </div>
               </div>
 
