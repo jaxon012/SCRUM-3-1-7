@@ -3,8 +3,9 @@ import { WordCard } from "@/components/WordCard";
 import { useWords } from "@/hooks/use-words";
 import { useVocabLists, useVocabListWords, useCreateVocabList } from "@/hooks/use-vocab-lists";
 import { Search, Filter, ChevronDown, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CreateVocabListDialog } from "@/components/CreateVocabListDialog";
+import { SortFilterSheet, type SortOption, type StatusFilter } from "@/components/SortFilterSheet";
 
 export default function Vocab() {
   const { data: words, isLoading, isError, error } = useWords();
@@ -15,6 +16,31 @@ export default function Vocab() {
   const [selectedListId, setSelectedListId] = useState<number | null>(null);
   const { data: listWords } = useVocabListWords(selectedListId ?? undefined);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showSortFilter, setShowSortFilter] = useState(false);
+
+  const [sortBy, setSortBy] = useState<SortOption>(() => {
+    try { return (JSON.parse(localStorage.getItem("lingoquest_sort_prefs") || "{}").sortBy) || "az"; }
+    catch { return "az"; }
+  });
+  const [filterStatuses, setFilterStatuses] = useState<StatusFilter[]>(() => {
+    try { return JSON.parse(localStorage.getItem("lingoquest_sort_prefs") || "{}").filterStatuses || ["new", "learned", "mastered"]; }
+    catch { return ["new", "learned", "mastered"]; }
+  });
+
+  const [selectedListIds, setSelectedListIds] = useState<number[]>(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("lingoquest_sort_prefs") || "{}");
+      return stored.selectedListIds || [];
+    } catch { return []; }
+  });
+
+  const updatePrefs = (newSort: SortOption, newStatuses: StatusFilter[], newListIds: number[]) => {
+    localStorage.setItem("lingoquest_sort_prefs", JSON.stringify({
+      sortBy: newSort,
+      filterStatuses: newStatuses,
+      selectedListIds: newListIds,
+    }));
+  };
 
   console.log("Vocab page - words data:", words);
 
@@ -30,10 +56,31 @@ export default function Vocab() {
 
   const sourceWords = selectedListId ? listWords : words;
 
-  const filteredWords = sourceWords?.filter((w: any) => 
-    w.term.toLowerCase().includes(search.toLowerCase()) || 
-    w.definition.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredWords = useMemo(() => {
+    if (!sourceWords) return [];
+
+    let result = sourceWords.filter((w: any) =>
+      w.term.toLowerCase().includes(search.toLowerCase()) ||
+      w.definition.toLowerCase().includes(search.toLowerCase())
+    );
+
+    result = result.filter((w: any) => {
+      const status = w.userWordProgress?.status || "new";
+      return filterStatuses.includes(status as StatusFilter);
+    });
+
+    return [...result].sort((a: any, b: any) => {
+      if (sortBy === "az") return a.term.localeCompare(b.term);
+      if (sortBy === "za") return b.term.localeCompare(a.term);
+      if (sortBy === "mastery") {
+        const order = { mastered: 0, learned: 1, new: 2 };
+        const aS = (a.userWordProgress?.status || "new") as keyof typeof order;
+        const bS = (b.userWordProgress?.status || "new") as keyof typeof order;
+        return order[aS] - order[bS];
+      }
+      return 0;
+    });
+  }, [sourceWords, search, sortBy, filterStatuses]);
 
   // Calculate stats from the words with progress
   const learnedCount = words?.filter(w => w.userWordProgress?.status === "learned").length || 0;
@@ -53,7 +100,10 @@ export default function Vocab() {
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-3 rounded-xl bg-secondary/50 border-transparent focus:bg-background focus:border-primary/20 focus:ring-4 focus:ring-primary/5 transition-all outline-none text-sm font-medium"
           />
-          <button className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-background rounded-lg transition-colors text-muted-foreground">
+          <button
+            onClick={() => setShowSortFilter(true)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-background rounded-lg transition-colors text-muted-foreground"
+          >
             <Filter className="w-4 h-4" />
           </button>
         </div>
@@ -139,6 +189,25 @@ export default function Vocab() {
         onCreate={async (name) => {
           const created = await createList.mutateAsync(name);
           setSelectedListId(created.vocabListId);
+        }}
+      />
+      <SortFilterSheet
+        isOpen={showSortFilter}
+        onClose={() => setShowSortFilter(false)}
+        sortBy={sortBy}
+        onSortChange={(s) => { setSortBy(s); updatePrefs(s, filterStatuses, selectedListIds); }}
+        filterStatuses={filterStatuses}
+        onFilterChange={(f) => { setFilterStatuses(f); updatePrefs(sortBy, f, selectedListIds); }}
+        lists={lists ?? []}
+        selectedListIds={selectedListIds}
+        onListFilterChange={(ids) => {
+          setSelectedListIds(ids);
+          updatePrefs(sortBy, filterStatuses, ids);
+          if (ids.length === 1) {
+            setSelectedListId(ids[0]);
+          } else if (ids.length === 0) {
+            setSelectedListId(null);
+          }
         }}
       />
     </Layout>
