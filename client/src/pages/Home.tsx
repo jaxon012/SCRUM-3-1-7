@@ -42,7 +42,7 @@ export default function Home() {
               <h3 className="font-bold text-lg">Continue Journey</h3>
               <Link
                 href="/adventure"
-                className="text-sm text-primary font-medium hover:underline"
+                className="text-sm text-foreground/80 font-medium hover:underline"
               >
                 View All
               </Link>
@@ -53,11 +53,11 @@ export default function Home() {
                 <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-md group relative">
                   <div className="h-44 relative overflow-hidden">
                     <img
-                      src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&q=80"
+                      src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&q=75&fm=webp"
                       alt="A mystical temple scene from the adventure story"
                       width={800}
                       height={176}
-                      fetchPriority="high"
+                      fetchpriority="high"
                       loading="eager"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     />

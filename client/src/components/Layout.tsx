@@ -48,6 +48,12 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
 
   return (
     <div className="min-h-screen bg-background flex flex-col w-full relative">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-foreground focus:text-background focus:font-semibold focus:text-sm"
+      >
+        Skip to main content
+      </a>
       {/* Header */}
       <header className="w-full px-6 py-4 flex flex-col gap-3 sticky top-0 z-50 bg-background border-b border-border/50 shadow-sm">
         <div className="max-w-[1200px] mx-auto w-full">
@@ -162,7 +168,7 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 w-full max-w-[1200px] mx-auto px-4 py-6 pb-24 md:pb-6 overflow-y-auto scrollbar-hide">
+      <main id="main-content" className="flex-1 w-full max-w-[1200px] mx-auto px-4 py-6 pb-24 md:pb-6 overflow-y-auto scrollbar-hide">
         {children}
       </main>
 
@@ -218,7 +224,7 @@ function NavLink({ href, icon: Icon, label, active }: { href: string; icon: any;
           />
         )}
       </div>
-      <span className={`text-[10px] font-medium transition-colors ${active ? 'text-primary' : 'text-muted-foreground'}`}>
+      <span className={`text-[10px] font-bold transition-colors ${active ? 'text-foreground' : 'text-muted-foreground'}`}>
         {label}
       </span>
     </Link>
