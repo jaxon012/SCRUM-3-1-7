@@ -193,7 +193,7 @@ export default function Adventure() {
                   max-w-[85%] rounded-2xl p-4 text-sm leading-relaxed shadow-sm
                   ${msg.role === 'user' 
                     ? 'bg-primary text-primary-foreground rounded-tr-none' 
-                    : 'bg-white border border-border/50 text-foreground rounded-tl-none'}
+                    : 'bg-card border border-border/50 text-foreground rounded-tl-none'}
                 `}
               >
                 {msg.role === 'assistant'
@@ -334,7 +334,7 @@ function AdventureWordModal({
             exit={{ opacity: 0, y: 100 }}
             className="fixed inset-0 z-50 flex items-end justify-center pointer-events-none px-4 pb-24"
           >
-            <div className="bg-white dark:bg-zinc-900 w-full max-w-lg md:max-w-xl rounded-3xl shadow-2xl border border-border/50 p-6 pointer-events-auto relative max-h-[80vh] overflow-y-auto pb-4">
+            <div className="bg-card w-full max-w-lg md:max-w-xl rounded-3xl shadow-2xl border border-border/50 p-6 pointer-events-auto relative max-h-[80vh] overflow-y-auto pb-4">
               <button
                 onClick={onClose}
                 className="absolute top-4 right-4 p-1 hover:bg-secondary rounded-full transition-colors"

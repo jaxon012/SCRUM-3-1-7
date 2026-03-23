@@ -89,7 +89,7 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
                 <MenuIcon className="w-5 h-5 text-muted-foreground" />
               </button>
               {menuOpen && (
-                <div className="absolute right-0 top-12 w-64 bg-white rounded-xl shadow-lg border border-border/50 p-4 z-50">
+                <div className="absolute right-0 top-12 w-64 bg-card rounded-xl shadow-lg border border-border/50 p-4 z-50">
                   {currentUser ? (
                     <div className="flex flex-col gap-2">
                       <p className="text-sm font-medium">
@@ -122,14 +122,14 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         placeholder="Username"
-                        className="border rounded-lg px-3 py-2 text-sm"
+                        className="border border-border bg-background text-foreground rounded-lg px-3 py-2 text-sm"
                       />
                       <input
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Password"
                         type="password"
-                        className="border rounded-lg px-3 py-2 text-sm"
+                        className="border border-border bg-background text-foreground rounded-lg px-3 py-2 text-sm"
                       />
                       <button
                         onClick={() => loginMutation.mutate()}
@@ -167,7 +167,7 @@ export function Layout({ children, title, showBack = false }: LayoutProps) {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 max-w-[1200px] mx-auto bg-white border-t border-border/50 px-6 py-4 z-50 md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 max-w-[1200px] mx-auto bg-background border-t border-border/50 px-6 py-4 z-50 md:hidden">
         <div className="flex justify-between items-center">
           <NavLink href="/" icon={HomeIcon} label="Home" active={location === "/"} />
           <NavLink href="/vocab" icon={BookOpenIcon} label="Vocab" active={location === "/vocab"} />

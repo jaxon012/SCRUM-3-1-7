@@ -36,67 +36,8 @@ export default function Home() {
       <div className="grid gap-6 md:grid-cols-10">
         {/* Left (70%) */}
         <div className="md:col-span-7">
-          {/* Hero Progress Section */}
-          <section className="mb-8">
-            <div className="bg-gradient-to-br from-primary to-accent rounded-3xl p-6 text-white shadow-lg shadow-primary/25 relative overflow-hidden w-full">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <p className="text-white/80 text-base font-medium mb-1">Weekly Streak</p>
-                  <h2 className="text-4xl leading-none font-display font-bold">
-                    {streakCount}/7 Days
-                  </h2>
-                </div>
-                <div className="bg-white/20 p-3 rounded-2xl">
-                  <FlameIcon className="w-8 h-8 text-orange-300 fill-orange-300" />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs font-medium text-white/70">
-                  <span>Keep going!</span>
-                  <span>{streakPct}%</span>
-                </div>
-                <div className="h-3 bg-black/20 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-white rounded-full"
-                    style={{ width: `${streakPct}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Quick Actions Grid */}
-          <section className="grid grid-cols-2 gap-4 mb-8">
-            <Link href="/vocab">
-              <div className="cursor-pointer group active:scale-[0.98] hover:scale-[1.02] transition-transform">
-                <div className="bg-card hover:bg-card/80 border border-border/50 rounded-2xl p-5 shadow-sm transition-all h-full flex flex-col justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center mb-4 group-hover:bg-blue-500 group-hover:text-white transition-colors">
-                    <CalendarIcon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-foreground">Daily Vocab</h3>
-                  </div>
-                </div>
-              </div>
-            </Link>
-
-            <Link href="/read">
-              <div className="cursor-pointer group active:scale-[0.98] hover:scale-[1.02] transition-transform">
-                <div className="bg-card hover:bg-card/80 border border-border/50 rounded-2xl p-5 shadow-sm transition-all h-full flex flex-col justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-4 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
-                    <StarIcon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-foreground">Practice</h3>
-                  </div>
-                </div>
-              </div>
-            </Link>
-          </section>
-
           {/* Featured Adventure */}
-          <section>
+          <section className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-lg">Continue Journey</h3>
               <Link
@@ -110,12 +51,12 @@ export default function Home() {
             <Link href="/adventure">
               <div className="cursor-pointer active:scale-[0.99] hover:scale-[1.01] transition-transform">
                 <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-md group relative">
-                  <div className="h-32 bg-gray-100 relative overflow-hidden">
-                    {/* Placeholder for dynamic scene image - using gradient for now */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-gray-800 to-gray-900 group-hover:scale-105 transition-transform duration-700" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <TrophyIcon className="w-12 h-12 text-white/20" />
-                    </div>
+                  <div className="h-44 relative overflow-hidden">
+                    <img
+                      src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&q=80"
+                      alt="Current scene"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    />
                     <div className="absolute top-3 right-3 bg-black/40 backdrop-blur-md px-2 py-1 rounded-lg text-xs font-medium text-white border border-white/10">
                       Level 3
                     </div>
@@ -139,14 +80,71 @@ export default function Home() {
               </div>
             </Link>
           </section>
+
+          {/* Quick Actions Grid */}
+          <section className="grid grid-cols-2 gap-4">
+            <Link href="/vocab">
+              <div className="cursor-pointer group active:scale-[0.98] hover:scale-[1.02] transition-transform">
+                <div className="bg-card hover:bg-card/80 border border-border/50 rounded-2xl p-5 shadow-sm transition-all h-full flex flex-col justify-between">
+                  <div className="w-10 h-10 rounded-xl bg-[#B8A832]/20 text-[#6b5c10] flex items-center justify-center mb-4 group-hover:bg-[#B8A832]/40 group-hover:text-[#6b5c10] transition-colors">
+                    <CalendarIcon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-foreground">Daily Vocab</h3>
+                  </div>
+                </div>
+              </div>
+            </Link>
+
+            <Link href="/read">
+              <div className="cursor-pointer group active:scale-[0.98] hover:scale-[1.02] transition-transform">
+                <div className="bg-card hover:bg-card/80 border border-border/50 rounded-2xl p-5 shadow-sm transition-all h-full flex flex-col justify-between">
+                  <div className="w-10 h-10 rounded-xl bg-[#6B9E78]/20 text-[#2d5c3a] flex items-center justify-center mb-4 group-hover:bg-[#6B9E78]/40 group-hover:text-[#2d5c3a] transition-colors">
+                    <StarIcon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-foreground">Practice</h3>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          </section>
         </div>
 
         {/* Right (30%) */}
-        <div className="hidden md:block md:col-span-3">
-          <section className="md:sticky md:top-[110px] self-start">
-            <div className="rounded-3xl p-6 border border-border/50 shadow-sm bg-gradient-to-br from-teal-500/15 via-amber-500/10 to-secondary/30">
+        <div className="hidden md:block md:col-span-3 pt-[2.75rem]">
+          <section className="md:sticky md:top-[110px] self-start space-y-4">
+            {/* Streak Card */}
+            <div className="bg-gradient-to-br from-primary to-accent rounded-3xl p-6 text-white shadow-lg shadow-primary/25 relative overflow-hidden">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <p className="text-white/80 text-base font-medium mb-1">Weekly Streak</p>
+                  <h2 className="text-4xl leading-none font-display font-bold">
+                    {streakCount}/7 Days
+                  </h2>
+                </div>
+                <div className="bg-white/20 p-3 rounded-2xl">
+                  <FlameIcon className="w-8 h-8 text-orange-300 fill-orange-300" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs font-medium text-white/70">
+                  <span>Keep going!</span>
+                  <span>{streakPct}%</span>
+                </div>
+                <div className="h-3 bg-black/20 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-white rounded-full"
+                    style={{ width: `${streakPct}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Featured Word */}
+            <div className="rounded-3xl p-6 border border-border/50 shadow-sm bg-gradient-to-br from-[#C97B4B]/15 via-[#B8A832]/10 to-secondary/30">
               <div className="flex items-center justify-between mb-3 gap-3">
-                <span className="inline-flex items-center rounded-full bg-white/60 border border-white/40 px-3 py-1 text-xs font-bold text-foreground">
+                <span className="inline-flex items-center rounded-full bg-background/60 border border-border/60 px-3 py-1 text-xs font-bold text-foreground">
                   NEW TODAY
                 </span>
                 <span className="text-xs text-muted-foreground hidden lg:block">Practice with voice</span>

@@ -54,8 +54,8 @@ export function WordCard({ word, index }: WordCardProps) {
           <div
             className={`
               w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg overflow-hidden
-              ${isMastered 
-                ? 'bg-green-500/10 text-green-600' 
+              ${isMastered
+                ? 'bg-[#6B9E78]/25 text-[#2d5c3a]'
                 : 'bg-primary/10 text-primary'
               }
             `}
@@ -145,7 +145,7 @@ export function WordCard({ word, index }: WordCardProps) {
                   className={`
                     w-full py-2 px-4 rounded-xl font-semibold text-sm transition-all
                     ${isMastered
-                      ? "bg-green-500/20 text-green-600 cursor-default"
+                      ? "bg-[#6B9E78]/30 text-[#2d5c3a] cursor-default"
                       : "bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50"
                     }
                   `}

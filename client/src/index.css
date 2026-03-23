@@ -3,33 +3,41 @@
 @tailwind utilities;
 
 :root {
-  /* Premium, clean palette */
+  /* Palette: #F5EFE6 / #E8DFCA / #AEBDCA / #7895B2 */
   --font-sans: 'Outfit', sans-serif;
   --font-display: 'Space Grotesk', sans-serif;
 
   /* HSL Values for easy manipulation */
-  --background: 210 20% 98%;
-  --foreground: 222 47% 11%;
-  
-  --primary: 243 75% 59%;      /* Vibrant Indigo */
-  --primary-foreground: 210 40% 98%;
-  
-  --secondary: 210 40% 96.1%;
-  --secondary-foreground: 222 47% 11.2%;
-  
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  
-  --accent: 262 83% 58%;       /* Purple Accent */
-  --accent-foreground: 210 40% 98%;
-  
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
+  --background: 36 43% 93%;       /* #F5EFE6 warm off-white */
+  --foreground: 210 30% 20%;      /* dark blue-slate for text */
 
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 243 75% 59%;
-  
+  --card: 42 40% 85%;             /* #E8DFCA warm beige */
+  --card-foreground: 210 30% 20%;
+  --card-border: 42 30% 78%;
+
+  --popover: 42 40% 85%;
+  --popover-foreground: 210 30% 20%;
+  --popover-border: 42 30% 78%;
+
+  --primary: 210 27% 58%;         /* #7895B2 steel blue */
+  --primary-foreground: 0 0% 98%;
+
+  --secondary: 208 21% 74%;       /* #AEBDCA muted blue-gray */
+  --secondary-foreground: 210 30% 20%;
+
+  --muted: 42 40% 85%;
+  --muted-foreground: 210 15% 45%;
+
+  --accent: 208 21% 74%;          /* #AEBDCA */
+  --accent-foreground: 210 30% 20%;
+
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 98%;
+
+  --border: 42 25% 80%;
+  --input: 42 25% 80%;
+  --ring: 210 27% 58%;
+
   --radius: 1rem;
 }
 
