@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "readingSpeedWordsPerMinute": 130,
+  "format": "one file per CEFR level",
+  "level": "A1",
+  "description": "Beginner",
+  "stories": [
+    {
+      "id": "A1-01",
+      "order": 1,
+      "title": "My Name",
+      "sentenceCount": 2,
+      "wordCount": 9,
+      "estimatedReadSeconds": 5,
+      "text": "My name is Leo. I am a student."
+    },
+    {
+      "id": "A1-02",
+      "order": 2,
+      "title": "My Dog",
+      "sentenceCount": 2,
+      "wordCount": 11,
+      "estimatedReadSeconds": 6,
+      "text": "I have a small dog. His name is Max."
+    },
+    {
+      "id": "A1-03",
+      "order": 3,
+      "title": "Morning Food",
+      "sentenceCount": 2,
+      "wordCount": 12,
+      "estimatedReadSeconds": 6,
+      "text": "I eat eggs in the morning. I drink water with breakfast."
+    },
+    {
+      "id": "A1-04",
+      "order": 4,
+      "title": "My Friend",
+      "sentenceCount": 2,
+      "wordCount": 12,
+      "estimatedReadSeconds": 6,
+      "text": "My friend is very kind. We walk to school together."
+    },
+    {
+      "id": "A1-05",
+      "order": 5,
+      "title": "At Home",
+      "sentenceCount": 2,
+      "wordCount": 13,
+      "estimatedReadSeconds": 6,
+      "text": "I live in a small house. My room is clean and bright."
+    },
+    {
+      "id": "A1-06",
+      "order": 6,
+      "title": "My Day",
+      "sentenceCount": 3,
+      "wordCount": 19,
+      "estimatedReadSeconds": 9,
+      "text": "I wake up at seven. I eat breakfast with my family. Then I go to school."
+    },
+    {
+      "id": "A1-07",
+      "order": 7,
+      "title": "The Park",
+      "sentenceCount": 4,
+      "wordCount": 24,
+      "estimatedReadSeconds": 11,
+      "text": "I go to the park after school. I see birds in the trees. Children run on the grass. I feel happy there."
+    },
+    {
+      "id": "A1-08",
+      "order": 8,
+      "title": "Family Dinner",
+      "sentenceCount": 5,
+      "wordCount": 31,
+      "estimatedReadSeconds": 14,
+      "text": "My family eats dinner together at night. My mom makes rice and chicken. My dad tells a story. My sister laughs a lot. I enjoy this time."
+    },
+    {
+      "id": "A1-09",
+      "order": 9,
+      "title": "Weekend Fun",
+      "sentenceCount": 6,
+      "wordCount": 38,
+      "estimatedReadSeconds": 18,
+      "text": "On Saturday, I wake up late. I eat fruit and toast. My friend calls me in the morning. We go outside and walk together. Later, I watch TV at home. It is a good day."
+    },
+    {
+      "id": "A1-10",
+      "order": 10,
+      "title": "Learning English",
+      "sentenceCount": 7,
+      "wordCount": 43,
+      "estimatedReadSeconds": 20,
+      "text": "I study English every day. I learn new words in class. I read short stories at home. Sometimes I speak with my teacher. Sometimes I make small mistakes. That is okay for me. I keep trying every day."
+    }
+  ]
+}

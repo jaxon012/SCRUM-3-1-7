@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "readingSpeedWordsPerMinute": 130,
+  "format": "one file per CEFR level",
+  "level": "A2",
+  "description": "Elementary",
+  "stories": [
+    {
+      "id": "A2-01",
+      "order": 1,
+      "title": "At the Store",
+      "sentenceCount": 2,
+      "wordCount": 15,
+      "estimatedReadSeconds": 7,
+      "text": "I went to the store yesterday. I bought bread, milk, and two apples."
+    },
+    {
+      "id": "A2-02",
+      "order": 2,
+      "title": "Bus Ride",
+      "sentenceCount": 2,
+      "wordCount": 17,
+      "estimatedReadSeconds": 8,
+      "text": "I take the bus to school every day. I usually sit by the window and listen to music."
+    },
+    {
+      "id": "A2-03",
+      "order": 3,
+      "title": "Rainy Afternoon",
+      "sentenceCount": 2,
+      "wordCount": 18,
+      "estimatedReadSeconds": 8,
+      "text": "It rained all afternoon, so I stayed inside. I read a book and made hot tea for myself."
+    },
+    {
+      "id": "A2-04",
+      "order": 4,
+      "title": "New Teacher",
+      "sentenceCount": 2,
+      "wordCount": 18,
+      "estimatedReadSeconds": 8,
+      "text": "Our new teacher arrived on Monday morning. She smiled often and explained the lesson clearly."
+    },
+    {
+      "id": "A2-05",
+      "order": 5,
+      "title": "Cooking Dinner",
+      "sentenceCount": 2,
+      "wordCount": 19,
+      "estimatedReadSeconds": 9,
+      "text": "Last night, I cooked dinner for my family. Everyone liked the rice, vegetables, and chicken soup."
+    },
+    {
+      "id": "A2-06",
+      "order": 6,
+      "title": "My Small Job",
+      "sentenceCount": 3,
+      "wordCount": 28,
+      "estimatedReadSeconds": 13,
+      "text": "I work in a small shop near my house. I help customers find simple things. I like the job because people are friendly."
+    },
+    {
+      "id": "A2-07",
+      "order": 7,
+      "title": "Moving Day",
+      "sentenceCount": 4,
+      "wordCount": 38,
+      "estimatedReadSeconds": 18,
+      "text": "Last month, my family moved to a new apartment. At first, I felt nervous about the change. The streets were different, and I did not know my neighbors. After one week, the place felt more comfortable."
+    },
+    {
+      "id": "A2-08",
+      "order": 8,
+      "title": "Beach Trip",
+      "sentenceCount": 5,
+      "wordCount": 47,
+      "estimatedReadSeconds": 22,
+      "text": "Last summer, I went to the beach with my cousins. We woke up early and packed snacks for the drive. The weather was warm, and the water looked beautiful. I collected small shells near the sand. At night, we were tired but very happy."
+    },
+    {
+      "id": "A2-09",
+      "order": 9,
+      "title": "Learning Slowly",
+      "sentenceCount": 6,
+      "wordCount": 57,
+      "estimatedReadSeconds": 26,
+      "text": "Learning English has taken time for me. In the beginning, I only knew a few words. Then I started listening more carefully in class. I practiced reading at home every evening. My mistakes still happen, but they happen less often now. That makes me feel proud of my progress."
+    },
+    {
+      "id": "A2-10",
+      "order": 10,
+      "title": "First Day in a New School",
+      "sentenceCount": 7,
+      "wordCount": 67,
+      "estimatedReadSeconds": 31,
+      "text": "My first day at a new school was difficult. I entered the classroom and felt very quiet. I did not understand every word around me. One classmate smiled and showed me where to sit. Another student helped me during lunch. By the end of the day, I felt less afraid. I knew the next day would be easier."
+    }
+  ]
+}

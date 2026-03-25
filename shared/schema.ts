@@ -42,6 +42,7 @@ export const passage = pgTable("passage", {
   bodyText: text("body_text").notNull(),
   readingLevel: integer("reading_level").notNull(),
   audioUrl: varchar("audio_url", { length: 500 }),
+  storyOrder: integer("story_order").notNull().default(0),
 });
 
 // Passage word junction table

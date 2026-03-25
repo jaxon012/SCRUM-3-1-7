@@ -2,7 +2,7 @@ import { Layout } from "@/components/Layout";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Send, X, RotateCcw } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import { useWords } from "@/hooks/use-words";
+import { useWords, useWordLookup } from "@/hooks/use-words";
 import {
   useVocabLists,
   useCreateVocabList,
@@ -413,11 +413,15 @@ function AdventureWordModal({
   setSelectedListId,
   onOpenCreateDialog,
 }: AdventureWordModalProps) {
-  if (!selectedWord) return null;
+  const { data: lookedUpWord, isLoading: isLookingUp } = useWordLookup(selectedWord);
 
-  const clean = selectedWord.toLowerCase();
+  const clean = selectedWord?.toLowerCase() ?? "";
   const matchingWord =
-    vocabWords?.find((w) => w.term.toLowerCase() === clean) || null;
+    lookedUpWord ||
+    vocabWords?.find((w) => w.term.toLowerCase() === clean) ||
+    null;
+
+  if (!selectedWord) return null;
 
   return (
     <AnimatePresence>
@@ -461,9 +465,27 @@ function AdventureWordModal({
                   <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
                     Definition
                   </h4>
-                  <p className="text-foreground/90">
-                    In a full version, this definition would come from the main
-                    vocab data.
+                  {isLookingUp ? (
+                    <div className="space-y-2 animate-pulse">
+                      <div className="h-4 bg-secondary rounded w-full" />
+                      <div className="h-4 bg-secondary rounded w-3/4" />
+                    </div>
+                  ) : (
+                    <p className="text-foreground/90">
+                      {matchingWord?.definition ?? "No definition found for this word."}
+                    </p>
+                  )}
+                  {matchingWord?.phonetic && !isLookingUp && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {matchingWord.phonetic}
+                    </p>
+                  )}
+                </div>
+                <div className="bg-secondary/50 p-3 rounded-xl">
+                  <p className="text-sm italic text-muted-foreground">
+                    "Try using{" "}
+                    <span className="text-primary font-medium">{selectedWord}</span> in
+                    a sentence you'd say today."
                   </p>
                 </div>
               </div>
