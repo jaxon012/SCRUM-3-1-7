@@ -2,6 +2,21 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
 import { getCachedMeUserId, useMe } from "@/hooks/use-me";
 
+async function errorMessageFromResponse(
+  res: Response,
+  fallback: string,
+): Promise<string> {
+  const text = await res.text();
+  try {
+    const j = JSON.parse(text) as { message?: string };
+    if (j?.message && typeof j.message === "string") return j.message;
+  } catch {
+    /* ignore */
+  }
+  if (text) return text.slice(0, 200);
+  return fallback;
+}
+
 export interface VocabListSummary {
   vocabListId: number;
   name: string;
@@ -93,8 +108,9 @@ export function useAddWordToVocabList() {
           body: JSON.stringify({ wordId: params.wordId }),
         });
         if (!res.ok) {
-          const err = await res.text();
-          throw new Error(err || "Failed to add word to list");
+          throw new Error(
+            await errorMessageFromResponse(res, "Failed to add word to list"),
+          );
         }
         return await res.json();
       } else if (params.term) {
@@ -108,8 +124,12 @@ export function useAddWordToVocabList() {
           body: JSON.stringify({ term: params.term }),
         });
         if (!res.ok) {
-          const err = await res.text();
-          throw new Error(err || "Failed to add word to list from term");
+          throw new Error(
+            await errorMessageFromResponse(
+              res,
+              "Failed to add word to list from term",
+            ),
+          );
         }
         return await res.json();
       } else {

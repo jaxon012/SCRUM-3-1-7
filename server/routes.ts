@@ -9,7 +9,7 @@ import { registerImageRoutes } from "./replit_integrations/image";
 import { db } from "./db";
 import { userStreak } from "@shared/schema";
 import { eq } from "drizzle-orm";
-import { anthropic } from "./anthropic";
+import { getAnthropic, resolveAnthropicApiKey } from "./anthropic";
 
 declare module "express-session" {
   interface SessionData {
@@ -39,12 +39,30 @@ export async function registerRoutes(
     next();
   });
 
-  app.use(session({
-    secret: "lingoquest-secret-key",
-    resave: false,
-    saveUninitialized: false,
-    cookie: { secure: false },
-  }));
+  const sessionSecret =
+    process.env.SESSION_SECRET || "lingoquest-secret-key-dev-only";
+  if (process.env.NODE_ENV === "production" && sessionSecret === "lingoquest-secret-key-dev-only") {
+    console.warn(
+      "[session] Set SESSION_SECRET in production; using default is insecure.",
+    );
+  }
+
+  const isProd = process.env.NODE_ENV === "production";
+
+  app.use(
+    session({
+      secret: sessionSecret,
+      resave: false,
+      saveUninitialized: false,
+      proxy: isProd,
+      cookie: {
+        secure: isProd,
+        httpOnly: true,
+        sameSite: "lax",
+        maxAge: 1000 * 60 * 60 * 24 * 7,
+      },
+    }),
+  );
 
   // Auth routes
   app.post("/api/login", async (req, res) => {
@@ -335,6 +353,13 @@ export async function registerRoutes(
   // Adventure chat endpoint — stateless, frontend sends full history
   app.post("/api/adventure/message", async (req, res) => {
     try {
+      if (!resolveAnthropicApiKey()) {
+        return res.status(503).json({
+          error:
+            "Adventure chat is not configured: set ANTHROPIC_API_KEY in your environment (.env).",
+        });
+      }
+
       const { messages, turnNumber } = req.body;
 
       if (!Array.isArray(messages) || messages.length === 0) {
@@ -360,7 +385,7 @@ export async function registerRoutes(
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
 
-      const stream = anthropic.messages.stream({
+      const stream = getAnthropic().messages.stream({
         model: "claude-sonnet-4-20250514",
         max_tokens: 1024,
         system: systemPrompt,

@@ -13,6 +13,44 @@ import { CreateVocabListDialog } from "@/components/CreateVocabListDialog";
 
 const MAX_TURNS = 5;
 
+const DEFAULT_ADVENTURE_SCENE_IMAGE = "/adventure-hero.webp";
+
+/** Turn the latest narrator text into a visual prompt for the image API. */
+function buildSceneImagePrompt(storyBeat: string): string {
+  const excerpt = storyBeat.replace(/\s+/g, " ").trim().slice(0, 900);
+  return (
+    "Fantasy adventure scene, painterly illustration, cinematic lighting, rich color, " +
+    "no text or letters in the image. Show this moment: " +
+    excerpt
+  );
+}
+
+async function requestSceneImage(
+  prompt: string
+): Promise<{ url: string | null; error?: string }> {
+  const res = await fetch("/api/generate-image", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ prompt, size: "512x512" }),
+  });
+  if (!res.ok) {
+    let message = `Image request failed (${res.status})`;
+    try {
+      const body = (await res.json()) as { error?: string };
+      if (body?.error) message = body.error;
+    } catch {
+      /* not JSON */
+    }
+    console.warn("generate-image failed:", res.status, message);
+    return { url: null, error: message };
+  }
+  const data = (await res.json()) as { url?: string | null; b64_json?: string | null };
+  if (data.url) return { url: data.url };
+  if (data.b64_json) return { url: `data:image/png;base64,${data.b64_json}` };
+  return { url: null, error: "No image data in response" };
+}
+
 interface Message {
   role: "system" | "user" | "assistant";
   content: string;
@@ -38,6 +76,11 @@ export default function Adventure() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [turnCount, setTurnCount] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
+  const [sceneImageUrl, setSceneImageUrl] = useState(DEFAULT_ADVENTURE_SCENE_IMAGE);
+  const [sceneImageLoading, setSceneImageLoading] = useState(false);
+  const [sceneImageError, setSceneImageError] = useState<string | null>(null);
+  const [adventureError, setAdventureError] = useState<string | null>(null);
+  const sceneImageRequestId = useRef(0);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -51,7 +94,11 @@ export default function Adventure() {
     e.preventDefault();
     if (!textInput.trim() || isStreaming || isComplete) return;
 
+    setAdventureError(null);
+    setSceneImageError(null);
     const content = textInput;
+    const prevMessages = messages;
+    const prevTurn = turnCount;
     const newTurnNumber = turnCount + 1;
     const updatedMessages = [...messages, { role: "user" as const, content }];
     setTextInput("");
@@ -59,6 +106,7 @@ export default function Adventure() {
     setTurnCount(newTurnNumber);
     setIsStreaming(true);
 
+    let assistantMessage = "";
     try {
       const res = await fetch("/api/adventure/message", {
         method: "POST",
@@ -68,15 +116,31 @@ export default function Adventure() {
       });
 
       if (!res.ok) {
-        console.error("Adventure API error:", res.status);
+        let errMsg = `Adventure request failed (${res.status})`;
+        try {
+          const body = (await res.json()) as { error?: string };
+          if (body?.error) errMsg = body.error;
+        } catch {
+          /* not JSON */
+        }
+        console.error("Adventure API error:", res.status, errMsg);
+        setAdventureError(errMsg);
+        setMessages(prevMessages);
+        setTurnCount(prevTurn);
+        setTextInput(content);
         return;
       }
 
       const reader = res.body?.getReader();
-      if (!reader) return;
+      if (!reader) {
+        setAdventureError("Adventure response had no body to read.");
+        setMessages(prevMessages);
+        setTurnCount(prevTurn);
+        setTextInput(content);
+        return;
+      }
 
       const decoder = new TextDecoder();
-      let assistantMessage = "";
       let buffer = "";
 
       setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
@@ -113,8 +177,34 @@ export default function Adventure() {
       }
     } catch (err) {
       console.error(err);
+      setAdventureError("Could not reach the adventure server. Try again.");
+      setMessages(prevMessages);
+      setTurnCount(prevTurn);
+      setTextInput(content);
     } finally {
       setIsStreaming(false);
+    }
+
+    if (assistantMessage.trim()) {
+      const reqId = ++sceneImageRequestId.current;
+      setSceneImageLoading(true);
+      try {
+        const prompt = buildSceneImagePrompt(assistantMessage);
+        const { url, error: imgErr } = await requestSceneImage(prompt);
+        if (reqId === sceneImageRequestId.current) {
+          if (imgErr) setSceneImageError(imgErr);
+          else if (url) {
+            setSceneImageError(null);
+            setSceneImageUrl(url);
+          }
+        }
+      } catch (e) {
+        console.error("Scene image error:", e);
+      } finally {
+        if (reqId === sceneImageRequestId.current) {
+          setSceneImageLoading(false);
+        }
+      }
     }
   };
 
@@ -129,71 +219,108 @@ export default function Adventure() {
     setTurnCount(0);
     setIsComplete(false);
     setTextInput("");
+    sceneImageRequestId.current += 1;
+    setSceneImageUrl(DEFAULT_ADVENTURE_SCENE_IMAGE);
+    setSceneImageLoading(false);
+    setAdventureError(null);
+    setSceneImageError(null);
   };
 
   return (
     <Layout title="Adventure Mode" showBack>
-      <div className="h-[calc(100vh-180px)] flex flex-col gap-3">
-        {/* Scene Image */}
-        <div className="relative rounded-2xl overflow-hidden shadow-md border border-border bg-black/10 shrink-0">
-          <img
-            src="/adventure-hero.webp"
-            alt="Current scene"
-            className="w-full h-auto block"
-          />
-          <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full text-[11px] font-medium text-white border border-white/10">
-            Turn {turnCount}/{MAX_TURNS} {isComplete ? "— Story Complete" : ""}
+      <div className="h-[calc(100vh-180px)] flex flex-col gap-3 min-h-0">
+        {adventureError && (
+          <div
+            role="alert"
+            className="rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
+            {adventureError}
           </div>
-        </div>
+        )}
+        {/* Desktop: image left + story right; mobile: stacked */}
+        <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 items-stretch">
+          {/* Left: scene image (square, centered in column) */}
+          <div className="flex flex-col justify-center items-center gap-2 min-h-0 py-1 md:py-0">
+            <div className="relative w-full max-w-[min(100%,340px)] sm:max-w-[380px] md:max-w-[400px] aspect-square rounded-2xl overflow-hidden shadow-md border border-border bg-muted/40">
+              <img
+                src={sceneImageUrl}
+                alt="Current scene"
+                className="absolute inset-0 w-full h-full object-contain object-center p-1 transition-opacity duration-300"
+              />
+              {sceneImageLoading && (
+                <div
+                  className="absolute inset-0 flex items-center justify-center bg-background/60 backdrop-blur-[2px] z-10"
+                  aria-busy
+                  aria-label="Generating scene image"
+                >
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              )}
+              <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full text-[11px] font-medium text-white border border-white/10 z-20">
+                Turn {turnCount}/{MAX_TURNS} {isComplete ? "— Story Complete" : ""}
+              </div>
+            </div>
+            {sceneImageError && (
+              <p
+                role="status"
+                className="text-xs text-muted-foreground text-center max-w-[min(100%,400px)] px-2 leading-snug"
+              >
+                {sceneImageError}
+              </p>
+            )}
+          </div>
 
-        {/* Conversation Box */}
-        <div
-          className="flex-1 overflow-y-auto rounded-2xl border border-border bg-card shadow-sm p-4 space-y-4"
-          ref={scrollRef}
-        >
-          {messages.map((msg, idx) => (
+          {/* Right: AI conversation */}
+          <div className="flex flex-col h-full min-h-[200px] md:min-h-0">
             <div
-              key={idx}
-              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+              className="flex-1 overflow-y-auto rounded-2xl border border-border bg-card shadow-sm p-4 space-y-4 min-h-0"
+              ref={scrollRef}
             >
-              <div
-                className={`
+              {messages.map((msg, idx) => (
+                <div
+                  key={idx}
+                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                >
+                  <div
+                    className={`
                   max-w-[85%] rounded-2xl p-3 text-sm leading-relaxed
                   ${msg.role === "user"
                     ? "bg-primary text-primary-foreground rounded-tr-none"
                     : "bg-secondary/40 border border-border/50 text-foreground rounded-tl-none"}
                 `}
-              >
-                {msg.role === "assistant"
-                  ? msg.content.split(" ").map((word, i) => {
-                      const clean = word.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, "");
-                      return (
-                        <span
-                          key={i}
-                          onClick={() => setSelectedWord(clean)}
-                          className="cursor-pointer hover:bg-primary/20 hover:text-primary rounded px-0.5 transition-colors duration-200"
-                        >
-                          {word}{" "}
-                        </span>
-                      );
-                    })
-                  : msg.content}
-              </div>
+                  >
+                    {msg.role === "assistant"
+                      ? msg.content.split(" ").map((word, i) => {
+                          const clean = word.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, "");
+                          return (
+                            <span
+                              key={i}
+                              onClick={() => setSelectedWord(clean)}
+                              className="cursor-pointer hover:bg-primary/20 hover:text-primary rounded px-0.5 transition-colors duration-200"
+                            >
+                              {word}{" "}
+                            </span>
+                          );
+                        })
+                      : msg.content}
+                  </div>
+                </div>
+              ))}
+              {isStreaming && messages[messages.length - 1]?.content === "" && (
+                <div className="flex justify-start">
+                  <div className="bg-secondary/40 border border-border/50 rounded-2xl rounded-tl-none p-3">
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                  </div>
+                </div>
+              )}
+              <div className="h-2" />
             </div>
-          ))}
-          {isStreaming && messages[messages.length - 1]?.content === "" && (
-            <div className="flex justify-start">
-              <div className="bg-secondary/40 border border-border/50 rounded-2xl rounded-tl-none p-3">
-                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-              </div>
-            </div>
-          )}
-          <div className="h-2" />
+          </div>
         </div>
 
-        {/* Input Area */}
+        {/* Input Area — full width below both columns */}
         {isComplete ? (
-          <div className="bg-card border border-border rounded-2xl p-3 shadow-sm flex items-center justify-center">
+          <div className="shrink-0 bg-card border border-border rounded-2xl p-3 shadow-sm flex items-center justify-center">
             <button
               onClick={handleNewAdventure}
               className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold text-sm hover:bg-primary/90 transition-colors"
@@ -205,7 +332,7 @@ export default function Adventure() {
         ) : (
           <form
             onSubmit={handleTextInput}
-            className="bg-card border border-border rounded-2xl p-2 shadow-sm flex items-center gap-2"
+            className="shrink-0 bg-card border border-border rounded-2xl p-2 shadow-sm flex items-center gap-2"
           >
             <input
               type="text"
