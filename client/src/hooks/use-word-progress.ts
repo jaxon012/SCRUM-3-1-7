@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
+import { getCachedMeUserId } from "@/hooks/use-me";
 
 console.log("use-word-progress hook loaded, api.wordProgress.update.path:", api.wordProgress.update.path);
 
@@ -32,8 +33,12 @@ export function useUpdateWordProgress() {
     },
     onSuccess: (data) => {
       console.log("Mutation success, invalidating query");
-      // Invalidate the words query to refetch updated data
-      queryClient.invalidateQueries({ queryKey: [api.words.list.path] });
+      const uid = getCachedMeUserId(queryClient);
+      if (uid != null) {
+        void queryClient.invalidateQueries({
+          queryKey: [api.words.list.path, uid],
+        });
+      }
     },
     onError: (error) => {
       console.error("Mutation error:", error);

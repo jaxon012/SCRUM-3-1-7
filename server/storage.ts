@@ -84,7 +84,7 @@ export interface IStorage {
   upsertReadingProgress(userId: number, passageId: number): Promise<void>;
   getLastReadPassageInLevel(userId: number, level: number): Promise<number | null>;
 
-  updateWordProgress(userWordId: number): Promise<UserWordProgress | undefined>;
+  updateWordProgress(userWordId: number, userId: number): Promise<UserWordProgress | undefined>;
   addWordToVocab(term: string, userId: number): Promise<Word>;
 
   getVocabLists(userId: number): Promise<(VocabList & { wordCount: number })[]>;
@@ -300,6 +300,33 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
+  async addWordToVocab(term: string, userId: number): Promise<Word> {
+    const cleanTerm = term.trim();
+    if (!cleanTerm) {
+      throw new Error("term is required");
+    }
+    const wordRecord = await this.createOrGetWordFromTerm(cleanTerm);
+    const [existingProgress] = await db
+      .select()
+      .from(userWordProgress)
+      .where(
+        and(
+          eq(userWordProgress.userId, userId),
+          eq(userWordProgress.wordId, wordRecord.wordId)
+        )
+      );
+    if (!existingProgress) {
+      await db.insert(userWordProgress).values({
+        userId,
+        wordId: wordRecord.wordId,
+        status: "new",
+        timesSeen: 0,
+        lastSeenAt: null,
+      });
+    }
+    return wordRecord;
+  }
+
   async getVocabLists(userId: number): Promise<(VocabList & { wordCount: number })[]> {
     const rows = await db
       .select({
@@ -481,11 +508,89 @@ export class DatabaseStorage implements IStorage {
     const existingUsers = await db.select().from(user);
     const existingWords = await db.select().from(word);
     const existingPassages = await db.select().from(passage);
-
     const existingUserWordProgress = await db.select().from(userWordProgress);
 
-    // Seed base rows only when the DB is empty, but always backfill missing images.
     const shouldSeedUsers = existingUsers.length === 0;
     const shouldSeedWords = existingWords.length === 0;
     const shouldSeedPassages = existingPassages.length === 0;
-    const shouldSeedProgress = existing
+    const shouldSeedProgress = existingUserWordProgress.length === 0;
+
+    if (shouldSeedUsers) {
+      const tomHash = await bcrypt.hash("cantreadyet", 10);
+      const xieHash = await bcrypt.hash("thankyou", 10);
+      const adminHash = await bcrypt.hash("password", 10);
+      await db.insert(user).values([
+        { email: "tom@example.com", displayName: "Tom Sawyer", username: "TomSawyer", password: tomHash, passwordPlain: "cantreadyet", role: "user" },
+        { email: "xiexie@example.com", displayName: "Xie Xie", username: "XieXie", password: xieHash, passwordPlain: "thankyou", role: "user" },
+        { email: "admin@lingoquest.com", displayName: "Super Admin", username: "SuperAdmin", password: adminHash, passwordPlain: "password", role: "admin" },
+      ]);
+    } else {
+      const adminExists = await this.getUserByUsername("SuperAdmin");
+      if (!adminExists) {
+        const adminHash = await bcrypt.hash("password", 10);
+        await db.insert(user).values({
+          email: "admin@lingoquest.com", displayName: "Super Admin", username: "SuperAdmin",
+          password: adminHash, passwordPlain: "password", role: "admin",
+        });
+      }
+    }
+
+    if (shouldSeedWords) {
+      await db.execute(sql`
+        INSERT INTO word (term, definition, phonetic, audio_url)
+        VALUES
+          ('application', 'A formal request to an authority for something.', '/ˌapləˈkāSH(ə)n/', 'https://example.com/application.mp3'),
+          ('work', 'Activity involving mental or physical effort done in order to achieve a purpose or result.', '/wərk/', 'https://example.com/work.mp3'),
+          ('employee', 'A person employed for wages or salary, especially at non-executive level.', '/əmˈploiē/', 'https://example.com/employee.mp3'),
+          ('hours', 'A period of time equal to sixty minutes.', '/ˈou(ə)rz/', 'https://example.com/hours.mp3'),
+          ('shift', 'One of two or more recurring periods in which different groups of workers do the same jobs in relay.', '/SHift/', 'https://example.com/shift.mp3'),
+          ('matey', 'A familiar and sometimes hostile form of address, especially to a stranger.', '/ˈmādē/', 'https://example.com/matey.mp3')
+      `);
+    }
+
+    // Always backfill missing images (including previously seeded words).
+    const seededWords = await db.select().from(word);
+    const missingImages = seededWords.filter((w) => !w.imageUrl);
+    const MAX_BACKFILL_PER_START = 25;
+    const toBackfill = missingImages.slice(0, MAX_BACKFILL_PER_START);
+
+    for (const w of toBackfill) {
+      try {
+        const combinedQuery = `${w.term} - ${w.definition}`;
+        const imageUrl = await fetchPexelsImageUrl(combinedQuery);
+        if (!imageUrl) continue;
+        await db
+          .update(word)
+          .set({ imageUrl })
+          .where(eq(word.wordId, w.wordId));
+      } catch (error) {
+        console.error(`Failed to fetch Pexels image for word "${w.term}":`, error);
+      }
+    }
+
+    if (shouldSeedProgress) {
+      await db.execute(sql`
+        INSERT INTO user_word_progress (user_id, word_id, status, times_seen, last_seen_at)
+        SELECT 1, word_id, 'new', 0, NULL FROM word
+      `);
+    }
+
+    if (shouldSeedPassages) {
+      await db.execute(sql`
+        INSERT INTO passage (title, body_text, reading_level, audio_url, story_order)
+        VALUES
+          ('Treasure Island Excerpt', 'Well, then, said he, this is the berth for me. Here you, matey, he cried to the man who trundled the barrow; bring up alongside and help up my chest. I''ll stay here a bit, he continued.', 2, 'https://example.com/treasure_island.mp3', 0)
+      `);
+    }
+
+    const [cefrCheck] = await db
+      .select({ cnt: count() })
+      .from(passage)
+      .where(sql`story_order > 0`);
+    if (Number(cefrCheck.cnt) === 0) {
+      await this.seedCefrStories();
+    }
+  }
+}
+
+export const storage = new DatabaseStorage();

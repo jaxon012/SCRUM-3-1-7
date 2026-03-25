@@ -11,11 +11,17 @@ import {
 import { useWords } from "@/hooks/use-words";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { useMemo } from "react";
+import { useMe } from "@/hooks/use-me";
 
 export default function Home() {
+  const { data: me } = useMe();
+  const userId = me?.userId;
+
   const { data: streakData } = useQuery<{ streakCount: number }>({
-    queryKey: ["/api/streak"],
-    queryFn: () => fetch("/api/streak").then((r) => r.json()),
+    queryKey: ["/api/streak", userId],
+    enabled: !!userId,
+    queryFn: () =>
+      fetch("/api/streak", { credentials: "include" }).then((r) => r.json()),
   });
   const [, navigate] = useLocation();
   const { data: words } = useWords();

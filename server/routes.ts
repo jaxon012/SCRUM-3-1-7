@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import type { Server } from "http";
 import session from "express-session";
 import { storage } from "./storage";
@@ -21,6 +21,24 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  const getAuthenticatedUserId = (req: Request, res: Response): number | null => {
+    const raw = req.session.userId;
+    const userId =
+      typeof raw === "number" && Number.isFinite(raw)
+        ? raw
+        : Number(raw);
+    if (!Number.isFinite(userId) || userId <= 0) {
+      res.status(401).json({ message: "Unauthorized" });
+      return null;
+    }
+    return userId;
+  };
+
+  app.use("/api", (_req, res, next) => {
+    res.setHeader("Cache-Control", "private, no-store, must-revalidate");
+    next();
+  });
+
   app.use(session({
     secret: "lingoquest-secret-key",
     resave: false,
@@ -42,24 +60,35 @@ export async function registerRoutes(
     if (!isValid) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
-    req.session.userId = user.userId;
 
-    // Update streak on login
-    const today = new Date().toISOString().split("T")[0];
-    const [existing] = await db.select().from(userStreak).where(eq(userStreak.userId, user.userId));
-    if (!existing) {
-      await db.insert(userStreak).values({ userId: user.userId, streakCount: 1, lastActivityDate: today });
-    } else {
-      const last = existing.lastActivityDate ? new Date(existing.lastActivityDate) : null;
-      const diffDays = last ? Math.floor((Date.now() - last.getTime()) / 86400000) : 999;
-      if (diffDays === 1) {
-        await db.update(userStreak).set({ streakCount: existing.streakCount + 1, lastActivityDate: today }).where(eq(userStreak.userId, user.userId));
-      } else if (diffDays >= 2) {
-        await db.update(userStreak).set({ streakCount: 0, lastActivityDate: today }).where(eq(userStreak.userId, user.userId));
+    req.session.regenerate(async (regenErr) => {
+      if (regenErr) {
+        console.error("Session regenerate error:", regenErr);
+        return res.status(500).json({ message: "Could not start session" });
       }
-    }
+      req.session.userId = user.userId;
 
-    res.json({ userId: user.userId, displayName: user.displayName, username: user.username, role: user.role });
+      try {
+        const today = new Date().toISOString().split("T")[0];
+        const [existing] = await db.select().from(userStreak).where(eq(userStreak.userId, user.userId));
+        if (!existing) {
+          await db.insert(userStreak).values({ userId: user.userId, streakCount: 1, lastActivityDate: today });
+        } else {
+          const last = existing.lastActivityDate ? new Date(existing.lastActivityDate) : null;
+          const diffDays = last ? Math.floor((Date.now() - last.getTime()) / 86400000) : 999;
+          if (diffDays === 1) {
+            await db.update(userStreak).set({ streakCount: existing.streakCount + 1, lastActivityDate: today }).where(eq(userStreak.userId, user.userId));
+          } else if (diffDays >= 2) {
+            await db.update(userStreak).set({ streakCount: 0, lastActivityDate: today }).where(eq(userStreak.userId, user.userId));
+          }
+        }
+
+        res.json({ userId: user.userId, displayName: user.displayName, username: user.username, role: user.role });
+      } catch (e) {
+        console.error("Login streak update error:", e);
+        res.status(500).json({ message: "Internal server error" });
+      }
+    });
   });
 
   app.post("/api/signup", async (req, res) => {
@@ -76,8 +105,15 @@ export async function registerRoutes(
       return res.status(409).json({ message: "Email already in use" });
     }
     const user = await storage.createUserWithHash({ username, password, email, displayName });
-    req.session.userId = user.userId;
-    res.status(201).json({ userId: user.userId, displayName: user.displayName, username: user.username, role: user.role });
+
+    req.session.regenerate((regenErr) => {
+      if (regenErr) {
+        console.error("Session regenerate error:", regenErr);
+        return res.status(500).json({ message: "Could not start session" });
+      }
+      req.session.userId = user.userId;
+      res.status(201).json({ userId: user.userId, displayName: user.displayName, username: user.username, role: user.role });
+    });
   });
 
   app.post("/api/logout", (req, res) => {
@@ -85,16 +121,20 @@ export async function registerRoutes(
   });
 
   app.get("/api/me", async (req, res) => {
-    if (!req.session.userId) return res.json(null);
-    const user = await storage.getUser(req.session.userId);
+    const sid = req.session.userId;
+    const userId =
+      typeof sid === "number" && Number.isFinite(sid) ? sid : Number(sid);
+    if (!Number.isFinite(userId) || userId <= 0) return res.json(null);
+    const user = await storage.getUser(userId);
     if (!user) return res.json(null);
     res.json({ userId: user.userId, displayName: user.displayName, username: user.username, role: user.role });
   });
 
   // Admin routes
   app.get("/api/admin/users", async (req, res) => {
-    if (!req.session.userId) return res.status(401).json({ message: "Not authenticated" });
-    const currentUser = await storage.getUser(req.session.userId);
+    const adminSessionUserId = getAuthenticatedUserId(req, res);
+    if (!adminSessionUserId) return;
+    const currentUser = await storage.getUser(adminSessionUserId);
     if (!currentUser || currentUser.role !== "admin") {
       return res.status(403).json({ message: "Forbidden" });
     }
@@ -116,20 +156,23 @@ export async function registerRoutes(
   registerImageRoutes(app);
 
   app.get(api.words.list.path, async (req, res) => {
-    const userId = req.session.userId || 1;
+    const userId = getAuthenticatedUserId(req, res);
+    if (!userId) return;
     const words = await storage.getWords(userId);
     res.json(words);
   });
 
   // Vocab list routes
   app.get(api.vocabLists.list.path, async (req, res) => {
-    const userId = req.session.userId || 1;
+    const userId = getAuthenticatedUserId(req, res);
+    if (!userId) return;
     const lists = await storage.getVocabLists(userId);
     res.json(lists);
   });
 
   app.post(api.vocabLists.create.path, async (req, res) => {
-    const userId = req.session.userId || 1;
+    const userId = getAuthenticatedUserId(req, res);
+    if (!userId) return;
     const { name } = req.body || {};
     if (!name || typeof name !== "string" || !name.trim()) {
       return res.status(400).json({ message: "Name is required" });
@@ -139,7 +182,8 @@ export async function registerRoutes(
   });
 
   app.get(api.vocabLists.words.list.path, async (req, res) => {
-    const userId = req.session.userId || 1;
+    const userId = getAuthenticatedUserId(req, res);
+    if (!userId) return;
     const listId = Number(req.params.listId);
     if (!listId || Number.isNaN(listId)) {
       return res.status(400).json({ message: "Invalid listId" });
@@ -155,7 +199,8 @@ export async function registerRoutes(
   });
 
   app.post(api.vocabLists.words.add.path, async (req, res) => {
-    const userId = req.session.userId || 1;
+    const userId = getAuthenticatedUserId(req, res);
+    if (!userId) return;
     const listId = Number(req.params.listId);
     const { wordId } = req.body || {};
     if (!listId || Number.isNaN(listId) || !wordId || Number.isNaN(Number(wordId))) {
@@ -170,7 +215,8 @@ export async function registerRoutes(
   });
 
   app.post(api.vocabLists.words.addFromTerm.path, async (req, res) => {
-    const userId = req.session.userId || 1;
+    const userId = getAuthenticatedUserId(req, res);
+    if (!userId) return;
     const listId = Number(req.params.listId);
     const { term } = req.body || {};
     if (!listId || Number.isNaN(listId) || !term || typeof term !== "string") {
@@ -192,13 +238,16 @@ export async function registerRoutes(
 
   app.patch(api.wordProgress.update.path, async (req, res) => {
     try {
+      const userId = getAuthenticatedUserId(req, res);
+      if (!userId) return;
+
       const userWordId = Number(req.params.userWordId);
       
       if (!userWordId || isNaN(userWordId)) {
         return res.status(400).json({ message: "Invalid userWordId" });
       }
 
-      const updated = await storage.updateWordProgress(userWordId);
+      const updated = await storage.updateWordProgress(userWordId, userId);
       
       if (!updated) {
         return res.status(404).json({ message: "Word progress not found" });
@@ -251,11 +300,13 @@ export async function registerRoutes(
   });
 
   app.post(api.addToVocab.path, async (req, res) => {
+    const userId = getAuthenticatedUserId(req, res);
+    if (!userId) return;
+
     const { term } = req.body;
     if (!term || typeof term !== "string") {
       return res.status(400).json({ message: "term is required", field: "term" });
     }
-    const userId = req.session.userId || 1;
     const result = await storage.addWordToVocab(term.trim(), userId);
     res.json({ wordId: result.wordId, term: result.term });
   });
@@ -275,8 +326,9 @@ export async function registerRoutes(
   });
 
   app.get("/api/streak", async (req, res) => {
-    if (!req.session.userId) return res.json({ streakCount: 0 });
-    const [row] = await db.select().from(userStreak).where(eq(userStreak.userId, req.session.userId));
+    const userId = getAuthenticatedUserId(req, res);
+    if (!userId) return;
+    const [row] = await db.select().from(userStreak).where(eq(userStreak.userId, userId));
     res.json({ streakCount: row?.streakCount ?? 0 });
   });
 
