@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "readingSpeedWordsPerMinute": 130,
+  "format": "one file per CEFR level",
+  "level": "B2",
+  "description": "Upper Intermediate",
+  "stories": [
+    {
+      "id": "B2-01",
+      "order": 1,
+      "title": "Social Media Pressure",
+      "sentenceCount": 2,
+      "wordCount": 22,
+      "estimatedReadSeconds": 10,
+      "text": "Social media helps people stay connected across long distances. At the same time, it often creates pressure to appear happier or more successful than we really are."
+    },
+    {
+      "id": "B2-02",
+      "order": 2,
+      "title": "Building Habits",
+      "sentenceCount": 2,
+      "wordCount": 24,
+      "estimatedReadSeconds": 11,
+      "text": "Good habits usually look small at the beginning. However, their long-term effects can completely change the direction of a person’s life."
+    },
+    {
+      "id": "B2-03",
+      "order": 3,
+      "title": "The Value of Sleep",
+      "sentenceCount": 2,
+      "wordCount": 25,
+      "estimatedReadSeconds": 12,
+      "text": "Many students sacrifice sleep when deadlines become stressful. In reality, poor rest often makes concentration, memory, and decision-making much worse the next day."
+    },
+    {
+      "id": "B2-04",
+      "order": 4,
+      "title": "Focus in a Distracted World",
+      "sentenceCount": 2,
+      "wordCount": 26,
+      "estimatedReadSeconds": 12,
+      "text": "Modern life offers endless chances to become distracted. Because of that, the ability to focus deeply has become more valuable than many people realize."
+    },
+    {
+      "id": "B2-05",
+      "order": 5,
+      "title": "Failure and Growth",
+      "sentenceCount": 2,
+      "wordCount": 27,
+      "estimatedReadSeconds": 12,
+      "text": "Failure feels painful when it first happens. Yet it often reveals weaknesses more clearly than success, which is why it can become such a powerful teacher."
+    },
+    {
+      "id": "B2-06",
+      "order": 6,
+      "title": "Redefining Success",
+      "sentenceCount": 3,
+      "wordCount": 39,
+      "estimatedReadSeconds": 18,
+      "text": "People often define success too narrowly. They focus on money or status while ignoring peace of mind, strong relationships, and meaningful work. A better definition should include both achievement and personal balance."
+    },
+    {
+      "id": "B2-07",
+      "order": 7,
+      "title": "Balancing Work and Life",
+      "sentenceCount": 4,
+      "wordCount": 50,
+      "estimatedReadSeconds": 23,
+      "text": "Work can provide purpose, structure, and financial stability. Nevertheless, it should not consume every hour of a person’s life. When people ignore rest, friendships, or family responsibilities, their success begins to lose its value. Balance is difficult, but without it, burnout becomes much more likely."
+    },
+    {
+      "id": "B2-08",
+      "order": 8,
+      "title": "Education Beyond School",
+      "sentenceCount": 5,
+      "wordCount": 62,
+      "estimatedReadSeconds": 29,
+      "text": "Formal education is important, but it is only one part of real learning. Many essential lessons come from work, failure, and difficult conversations. School can build a strong foundation, yet experience often teaches judgment more effectively. This is especially true when people must solve problems with no clear answer. For that reason, learning should continue long after graduation."
+    },
+    {
+      "id": "B2-09",
+      "order": 9,
+      "title": "How Technology Changes Us",
+      "sentenceCount": 6,
+      "wordCount": 73,
+      "estimatedReadSeconds": 34,
+      "text": "Technology has improved daily life in ways that would have seemed impossible only a generation ago. We can communicate instantly, find information quickly, and automate routine tasks. Even so, every advantage introduces new questions. Some tools save time but weaken attention. Others increase convenience while reducing privacy. As technology expands, people must think more carefully about how they use it."
+    },
+    {
+      "id": "B2-10",
+      "order": 10,
+      "title": "Making Better Decisions",
+      "sentenceCount": 7,
+      "wordCount": 86,
+      "estimatedReadSeconds": 40,
+      "text": "Good decisions rarely come from emotion alone. In most cases, they require time, reflection, and a willingness to consider consequences that may not appear immediately. This is difficult because fast choices often feel satisfying in the moment. However, what feels urgent is not always what matters most. Careful thinkers pause long enough to ask better questions. They examine both short-term rewards and long-term costs. That habit usually leads to wiser outcomes."
+    }
+  ]
+}

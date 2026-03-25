@@ -4,6 +4,7 @@ import {
   word,
   userWordProgress,
   passage,
+  userReadingProgress,
   vocabList,
   vocabListWord,
   type User,
@@ -13,9 +14,13 @@ import {
   type Passage,
   type VocabList,
 } from "@shared/schema";
-import { eq, and, sql, count } from "drizzle-orm";
+import { eq, and, sql, count, asc, desc } from "drizzle-orm";
 import bcrypt from "bcrypt";
+import { readFileSync } from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const PEXELS_API_KEY = process.env.PEXELS_API_KEY;
 
@@ -75,6 +80,9 @@ export interface IStorage {
 
   getReadingPassages(): Promise<Passage[]>;
   getReadingPassage(id: number): Promise<Passage | undefined>;
+  getCurrentReadingProgress(userId: number): Promise<number | null>;
+  upsertReadingProgress(userId: number, passageId: number): Promise<void>;
+  getLastReadPassageInLevel(userId: number, level: number): Promise<number | null>;
 
   updateWordProgress(userWordId: number): Promise<UserWordProgress | undefined>;
   addWordToVocab(term: string, userId: number): Promise<Word>;
@@ -173,7 +181,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getReadingPassages(): Promise<Passage[]> {
-    const passages = await db.select().from(passage);
+    const passages = await db
+      .select()
+      .from(passage)
+      .orderBy(asc(passage.readingLevel), asc(passage.storyOrder), asc(passage.passageId));
 
     return passages.map((p) => ({
       ...p,
@@ -199,6 +210,63 @@ export class DatabaseStorage implements IStorage {
         result.audioUrl ||
         "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&q=80",
     } as Passage;
+  }
+
+  async getCurrentReadingProgress(userId: number): Promise<number | null> {
+    const rows = await db
+      .select()
+      .from(userReadingProgress)
+      .where(eq(userReadingProgress.userId, userId))
+      .orderBy(desc(userReadingProgress.completedAt))
+      .limit(1);
+    return rows.length > 0 ? rows[0].passageId : null;
+  }
+
+  async upsertReadingProgress(userId: number, passageId: number): Promise<void> {
+    const existing = await db
+      .select()
+      .from(userReadingProgress)
+      .where(
+        and(
+          eq(userReadingProgress.userId, userId),
+          eq(userReadingProgress.passageId, passageId)
+        )
+      )
+      .limit(1);
+
+    if (existing.length > 0) {
+      await db
+        .update(userReadingProgress)
+        .set({ completedAt: new Date(), percentComplete: 50 })
+        .where(eq(userReadingProgress.userReadingId, existing[0].userReadingId));
+    } else {
+      await db.insert(userReadingProgress).values({
+        userId,
+        passageId,
+        percentComplete: 50,
+        completedAt: new Date(),
+      });
+    }
+  }
+
+  async getLastReadPassageInLevel(userId: number, level: number): Promise<number | null> {
+    const rows = await db
+      .select({
+        passageId: userReadingProgress.passageId,
+        completedAt: userReadingProgress.completedAt,
+      })
+      .from(userReadingProgress)
+      .innerJoin(passage, eq(userReadingProgress.passageId, passage.passageId))
+      .where(
+        and(
+          eq(userReadingProgress.userId, userId),
+          eq(passage.readingLevel, level)
+        )
+      )
+      .orderBy(desc(userReadingProgress.completedAt))
+      .limit(1);
+
+    return rows.length > 0 ? rows[0].passageId : null;
   }
 
   async updateWordProgress(userWordId: number): Promise<UserWordProgress | undefined> {
@@ -327,7 +395,29 @@ export class DatabaseStorage implements IStorage {
       return existing[0];
     }
 
-    const definition = "User-added word; definition to be set later.";
+    let definition = "Definition not available.";
+    let phonetic: string | null = null;
+    let wordAudioUrl: string | null = null;
+
+    try {
+      const dictRes = await fetch(
+        `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(lowered)}`
+      );
+      if (dictRes.ok) {
+        const dictData: any[] = await dictRes.json();
+        const entry = dictData[0];
+        definition =
+          entry?.meanings?.[0]?.definitions?.[0]?.definition ??
+          "Definition not available.";
+        phonetic =
+          entry?.phonetics?.find((p: any) => p.text)?.text ?? null;
+        wordAudioUrl =
+          entry?.phonetics?.find((p: any) => p.audio && p.audio !== "")?.audio ??
+          null;
+      }
+    } catch (err) {
+      console.error(`[dict] Failed to fetch definition for "${lowered}":`, err);
+    }
 
     let imageUrl: string | null = null;
     try {
@@ -342,13 +432,39 @@ export class DatabaseStorage implements IStorage {
       .values({
         term: lowered,
         definition,
-        phonetic: null,
-        audioUrl: null,
+        phonetic,
+        audioUrl: wordAudioUrl,
         imageUrl: imageUrl ?? null,
       })
       .returning();
 
     return created;
+  }
+
+  private async seedCefrStories(): Promise<void> {
+    const levelMap: Record<string, number> = {
+      A1: 1, A2: 2, B1: 3, B2: 4, C1: 5, C2: 6,
+    };
+    const files = ["A1", "A2", "B1", "B2", "C1", "C2"];
+
+    for (const levelKey of files) {
+      const filePath = join(__dirname, "..", "cefr_story_levels_json", `${levelKey}.json`);
+      const data = JSON.parse(readFileSync(filePath, "utf-8")) as {
+        stories: { id: string; order: number; title: string; text: string }[];
+      };
+      const readingLevel = levelMap[levelKey];
+
+      for (const story of data.stories) {
+        await db.insert(passage).values({
+          title: story.title,
+          bodyText: story.text,
+          readingLevel,
+          storyOrder: story.order,
+          audioUrl: null,
+        });
+      }
+    }
+    console.log("[seed] Seeded 60 CEFR stories.");
   }
 
   async seedData(): Promise<void> {
@@ -431,12 +547,19 @@ export class DatabaseStorage implements IStorage {
     }
 
     if (shouldSeedPassages) {
-      // Passage
       await db.execute(sql`
-        INSERT INTO passage (title, body_text, reading_level, audio_url)
+        INSERT INTO passage (title, body_text, reading_level, audio_url, story_order)
         VALUES
-          ('Treasure Island Excerpt', 'Well, then, said he, this is the berth for me. Here you, matey, he cried to the man who trundled the barrow; bring up alongside and help up my chest. I''ll stay here a bit, he continued.', 2, 'https://example.com/treasure_island.mp3')
+          ('Treasure Island Excerpt', 'Well, then, said he, this is the berth for me. Here you, matey, he cried to the man who trundled the barrow; bring up alongside and help up my chest. I''ll stay here a bit, he continued.', 2, 'https://example.com/treasure_island.mp3', 0)
       `);
+    }
+
+    const [cefrCheck] = await db
+      .select({ cnt: count() })
+      .from(passage)
+      .where(sql`story_order > 0`);
+    if (Number(cefrCheck.cnt) === 0) {
+      await this.seedCefrStories();
     }
   }
 }
