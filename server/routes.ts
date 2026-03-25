@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import type { Server } from "http";
 import session from "express-session";
 import { storage } from "./storage";
@@ -21,6 +21,14 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  const getAuthenticatedUserId = (req: Request, res: Response): number | null => {
+    if (!req.session.userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return null;
+    }
+    return req.session.userId;
+  };
+
   app.use(session({
     secret: "lingoquest-secret-key",
     resave: false,
@@ -116,20 +124,23 @@ export async function registerRoutes(
   registerImageRoutes(app);
 
   app.get(api.words.list.path, async (req, res) => {
-    const userId = req.session.userId || 1;
+    const userId = getAuthenticatedUserId(req, res);
+    if (!userId) return;
     const words = await storage.getWords(userId);
     res.json(words);
   });
 
   // Vocab list routes
   app.get(api.vocabLists.list.path, async (req, res) => {
-    const userId = req.session.userId || 1;
+    const userId = getAuthenticatedUserId(req, res);
+    if (!userId) return;
     const lists = await storage.getVocabLists(userId);
     res.json(lists);
   });
 
   app.post(api.vocabLists.create.path, async (req, res) => {
-    const userId = req.session.userId || 1;
+    const userId = getAuthenticatedUserId(req, res);
+    if (!userId) return;
     const { name } = req.body || {};
     if (!name || typeof name !== "string" || !name.trim()) {
       return res.status(400).json({ message: "Name is required" });
@@ -139,7 +150,8 @@ export async function registerRoutes(
   });
 
   app.get(api.vocabLists.words.list.path, async (req, res) => {
-    const userId = req.session.userId || 1;
+    const userId = getAuthenticatedUserId(req, res);
+    if (!userId) return;
     const listId = Number(req.params.listId);
     if (!listId || Number.isNaN(listId)) {
       return res.status(400).json({ message: "Invalid listId" });
@@ -155,7 +167,8 @@ export async function registerRoutes(
   });
 
   app.post(api.vocabLists.words.add.path, async (req, res) => {
-    const userId = req.session.userId || 1;
+    const userId = getAuthenticatedUserId(req, res);
+    if (!userId) return;
     const listId = Number(req.params.listId);
     const { wordId } = req.body || {};
     if (!listId || Number.isNaN(listId) || !wordId || Number.isNaN(Number(wordId))) {
@@ -170,7 +183,8 @@ export async function registerRoutes(
   });
 
   app.post(api.vocabLists.words.addFromTerm.path, async (req, res) => {
-    const userId = req.session.userId || 1;
+    const userId = getAuthenticatedUserId(req, res);
+    if (!userId) return;
     const listId = Number(req.params.listId);
     const { term } = req.body || {};
     if (!listId || Number.isNaN(listId) || !term || typeof term !== "string") {
@@ -192,13 +206,16 @@ export async function registerRoutes(
 
   app.patch(api.wordProgress.update.path, async (req, res) => {
     try {
+      const userId = getAuthenticatedUserId(req, res);
+      if (!userId) return;
+
       const userWordId = Number(req.params.userWordId);
       
       if (!userWordId || isNaN(userWordId)) {
         return res.status(400).json({ message: "Invalid userWordId" });
       }
 
-      const updated = await storage.updateWordProgress(userWordId);
+      const updated = await storage.updateWordProgress(userWordId, userId);
       
       if (!updated) {
         return res.status(404).json({ message: "Word progress not found" });
@@ -225,18 +242,21 @@ export async function registerRoutes(
   });
 
   app.post(api.addToVocab.path, async (req, res) => {
+    const userId = getAuthenticatedUserId(req, res);
+    if (!userId) return;
+
     const { term } = req.body;
     if (!term || typeof term !== "string") {
       return res.status(400).json({ message: "term is required", field: "term" });
     }
-    const userId = req.session.userId || 1;
     const result = await storage.addWordToVocab(term.trim(), userId);
     res.json({ wordId: result.wordId, term: result.term });
   });
 
   app.get("/api/streak", async (req, res) => {
-    if (!req.session.userId) return res.json({ streakCount: 0 });
-    const [row] = await db.select().from(userStreak).where(eq(userStreak.userId, req.session.userId));
+    const userId = getAuthenticatedUserId(req, res);
+    if (!userId) return;
+    const [row] = await db.select().from(userStreak).where(eq(userStreak.userId, userId));
     res.json({ streakCount: row?.streakCount ?? 0 });
   });
 
