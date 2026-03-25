@@ -2,6 +2,8 @@ import { Link, useLocation } from "wouter";
 import { HomeIcon, BookOpenIcon, MicIcon, Gamepad2Icon, ChevronLeftIcon, MenuIcon } from "./icons";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ME_QUERY_KEY } from "@/hooks/use-me";
+import { clearVocabSortPrefsFromStorage } from "@/lib/vocab-prefs-storage";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,7 +13,7 @@ interface LayoutProps {
 }
 
 export function Layout({ children, title, showBack = false, backOnly = false }: LayoutProps) {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -19,7 +21,7 @@ export function Layout({ children, title, showBack = false, backOnly = false }: 
   const queryClient = useQueryClient();
 
   const { data: currentUser } = useQuery({
-    queryKey: ["me"],
+    queryKey: ME_QUERY_KEY,
     queryFn: () => fetch("/api/me", { credentials: "include" }).then(r => r.json()),
   });
 
@@ -34,7 +36,9 @@ export function Layout({ children, title, showBack = false, backOnly = false }: 
       return r.json();
     }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["me"] });
+      clearVocabSortPrefsFromStorage();
+      queryClient.clear();
+      void queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY });
       setUsername("");
       setPassword("");
       setError("");
@@ -44,7 +48,12 @@ export function Layout({ children, title, showBack = false, backOnly = false }: 
 
   const logoutMutation = useMutation({
     mutationFn: () => fetch("/api/logout", { method: "POST", credentials: "include" }).then(r => r.json()),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["me"] }),
+    onSuccess: () => {
+      clearVocabSortPrefsFromStorage();
+      queryClient.clear();
+      void queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY });
+      navigate("/login", { replace: true });
+    },
   });
 
   return (

@@ -275,9 +275,16 @@ export class DatabaseStorage implements IStorage {
       .from(vocabList)
       .leftJoin(vocabListWord, eq(vocabList.vocabListId, vocabListWord.vocabListId))
       .where(eq(vocabList.userId, userId))
-      .groupBy(vocabList.vocabListId);
+      .groupBy(
+        vocabList.vocabListId,
+        vocabList.userId,
+        vocabList.name,
+        vocabList.createdAt,
+      );
 
-    return rows as (VocabList & { wordCount: number })[];
+    return rows.filter((r) => r.userId === userId) as (VocabList & {
+      wordCount: number;
+    })[];
   }
 
   async createVocabList(userId: number, name: string): Promise<VocabList> {

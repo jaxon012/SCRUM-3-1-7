@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@shared/routes";
+import { getCachedMeUserId } from "@/hooks/use-me";
 
 export function useAddWordToVocab() {
   const queryClient = useQueryClient();
@@ -18,7 +19,12 @@ export function useAddWordToVocab() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.words.list.path] });
+      const uid = getCachedMeUserId(queryClient);
+      if (uid != null) {
+        void queryClient.invalidateQueries({
+          queryKey: [api.words.list.path, uid],
+        });
+      }
     },
   });
 }
