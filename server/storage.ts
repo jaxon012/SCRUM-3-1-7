@@ -67,7 +67,7 @@ export interface IStorage {
   createUserWithHash(data: { username: string; password: string; email: string; displayName: string }): Promise<User>;
   verifyPassword(plaintext: string, hash: string): Promise<boolean>;
 
-  getWords(userId?: number): Promise<(Word & { userWordProgress?: UserWordProgress })[]>;
+  getWords(userId: number): Promise<(Word & { userWordProgress?: UserWordProgress })[]>;
   getWordWithProgress(
     wordId: number,
     userId: number
@@ -76,7 +76,7 @@ export interface IStorage {
   getReadingPassages(): Promise<Passage[]>;
   getReadingPassage(id: number): Promise<Passage | undefined>;
 
-  updateWordProgress(userWordId: number): Promise<UserWordProgress | undefined>;
+  updateWordProgress(userWordId: number, userId: number): Promise<UserWordProgress | undefined>;
   addWordToVocab(term: string, userId: number): Promise<Word>;
 
   getVocabLists(userId: number): Promise<(VocabList & { wordCount: number })[]>;
@@ -132,7 +132,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getWords(
-    userId: number = 1
+    userId: number
   ): Promise<(Word & { userWordProgress?: UserWordProgress })[]> {
     const words = await db.select().from(word);
 
@@ -201,11 +201,16 @@ export class DatabaseStorage implements IStorage {
     } as Passage;
   }
 
-  async updateWordProgress(userWordId: number): Promise<UserWordProgress | undefined> {
+  async updateWordProgress(userWordId: number, userId: number): Promise<UserWordProgress | undefined> {
     const [currentProgress] = await db
       .select()
       .from(userWordProgress)
-      .where(eq(userWordProgress.userWordId, userWordId));
+      .where(
+        and(
+          eq(userWordProgress.userWordId, userWordId),
+          eq(userWordProgress.userId, userId)
+        )
+      );
 
     if (!currentProgress) return undefined;
 
@@ -216,10 +221,46 @@ export class DatabaseStorage implements IStorage {
         status: "mastered",
         lastSeenAt: new Date(),
       })
-      .where(eq(userWordProgress.userWordId, userWordId))
+      .where(
+        and(
+          eq(userWordProgress.userWordId, userWordId),
+          eq(userWordProgress.userId, userId)
+        )
+      )
       .returning();
 
     return updated;
+  }
+
+  async addWordToVocab(term: string, userId: number): Promise<Word> {
+    const cleanTerm = term.trim();
+    if (!cleanTerm) {
+      throw new Error("term is required");
+    }
+
+    const wordRecord = await this.createOrGetWordFromTerm(cleanTerm);
+
+    const [existingProgress] = await db
+      .select()
+      .from(userWordProgress)
+      .where(
+        and(
+          eq(userWordProgress.userId, userId),
+          eq(userWordProgress.wordId, wordRecord.wordId)
+        )
+      );
+
+    if (!existingProgress) {
+      await db.insert(userWordProgress).values({
+        userId,
+        wordId: wordRecord.wordId,
+        status: "new",
+        timesSeen: 0,
+        lastSeenAt: null,
+      });
+    }
+
+    return wordRecord;
   }
 
   async getVocabLists(userId: number): Promise<(VocabList & { wordCount: number })[]> {
@@ -251,8 +292,13 @@ export class DatabaseStorage implements IStorage {
     const [list] = await db
       .select()
       .from(vocabList)
-      .where(eq(vocabList.vocabListId, listId));
-    if (!list || list.userId !== userId) {
+      .where(
+        and(
+          eq(vocabList.vocabListId, listId),
+          eq(vocabList.userId, userId)
+        )
+      );
+    if (!list) {
       return [];
     }
 
@@ -280,8 +326,13 @@ export class DatabaseStorage implements IStorage {
     const [list] = await db
       .select()
       .from(vocabList)
-      .where(eq(vocabList.vocabListId, listId));
-    if (!list || list.userId !== userId) {
+      .where(
+        and(
+          eq(vocabList.vocabListId, listId),
+          eq(vocabList.userId, userId)
+        )
+      );
+    if (!list) {
       return null;
     }
 
