@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
-import { HomeIcon, BookOpenIcon, MicIcon, Gamepad2Icon, ChevronLeftIcon, MenuIcon } from "./icons";
+import { Gamepad2 } from "lucide-react";
+import { HomeIcon, BookOpenIcon, MicIcon, ChevronLeftIcon, MenuIcon } from "./icons";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ME_QUERY_KEY } from "@/hooks/use-me";
@@ -176,7 +177,7 @@ export function Layout({ children, title, showBack = false, backOnly = false }: 
             <DesktopNavLink href="/" icon={HomeIcon} label="Home" active={location === "/"} />
             <DesktopNavLink href="/vocab" icon={BookOpenIcon} label="Vocab" active={location === "/vocab"} />
             <DesktopNavLink href="/read" icon={MicIcon} label="Read" active={location === "/read"} />
-            <DesktopNavLink href="/adventure" icon={Gamepad2Icon} label="Play" active={location === "/adventure"} />
+            <DesktopNavLink href="/adventure" icon={Gamepad2} label="Play" active={location === "/adventure"} />
           </div>
           )}
         </div>
@@ -193,7 +194,7 @@ export function Layout({ children, title, showBack = false, backOnly = false }: 
           <NavLink href="/" icon={HomeIcon} label="Home" active={location === "/"} />
           <NavLink href="/vocab" icon={BookOpenIcon} label="Vocab" active={location === "/vocab"} />
           <NavLink href="/read" icon={MicIcon} label="Read" active={location === "/read"} />
-          <NavLink href="/adventure" icon={Gamepad2Icon} label="Play" active={location === "/adventure"} />
+          <NavLink href="/adventure" icon={Gamepad2} label="Play" active={location === "/adventure"} />
         </div>
       </nav>
       )}
@@ -233,7 +234,7 @@ function NavLink({ href, icon: Icon, label, active }: { href: string; icon: any;
         p-2.5 rounded-2xl transition-all duration-300 relative
         ${active ? 'text-primary bg-primary/10 scale-110 shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'}
       `}>
-        <Icon className={`w-6 h-6 ${active ? 'fill-current' : ''}`} strokeWidth={active ? 2.5 : 2} />
+        <Icon className="w-6 h-6" strokeWidth={active ? 2.5 : 2} />
         {active && (
           <div
             className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full"

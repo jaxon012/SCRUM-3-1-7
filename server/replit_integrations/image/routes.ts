@@ -1,31 +1,51 @@
 import type { Express, Request, Response } from "express";
-import { openai } from "./client";
+import {
+  adventurePromptToPexelsQuery,
+  fetchPexelsPhotoUrl,
+  resolvePexelsApiKey,
+} from "../../pexels";
+
+function pexelsConfigMessage(): string {
+  return (
+    "Scene images use the Pexels API. Set PEXELS_API_KEY in your environment (.env). " +
+    "Get a key at https://www.pexels.com/api/"
+  );
+}
 
 export function registerImageRoutes(app: Express): void {
   app.post("/api/generate-image", async (req: Request, res: Response) => {
     try {
-      const { prompt, size = "1024x1024" } = req.body;
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
 
-      if (!prompt) {
+      if (!resolvePexelsApiKey()) {
+        return res.status(503).json({ error: pexelsConfigMessage() });
+      }
+
+      const { prompt } = req.body;
+
+      if (!prompt || typeof prompt !== "string") {
         return res.status(400).json({ error: "Prompt is required" });
       }
 
-      const response = await openai.images.generate({
-        model: "gpt-image-1",
-        prompt,
-        n: 1,
-        size: size as "1024x1024" | "512x512" | "256x256",
-      });
+      const query = adventurePromptToPexelsQuery(prompt);
+      const imageUrl = await fetchPexelsPhotoUrl(query, { orientation: "landscape" });
 
-      const imageData = response.data[0];
+      if (!imageUrl) {
+        return res.status(502).json({
+          error:
+            "Could not find a matching photo. Try continuing the story and the scene may update.",
+        });
+      }
+
       res.json({
-        url: imageData.url,
-        b64_json: imageData.b64_json,
+        url: imageUrl,
+        b64_json: null,
       });
     } catch (error) {
-      console.error("Error generating image:", error);
-      res.status(500).json({ error: "Failed to generate image" });
+      console.error("Error fetching scene image from Pexels:", error);
+      res.status(500).json({ error: "Failed to load scene image" });
     }
   });
 }
-

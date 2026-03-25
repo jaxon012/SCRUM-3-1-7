@@ -5,6 +5,7 @@ import { AudioPlayer } from "./AudioPlayer";
 import { useUpdateWordProgress } from "@/hooks/use-word-progress";
 import { useVocabLists, useAddWordToVocabList, useCreateVocabList } from "@/hooks/use-vocab-lists";
 import { CreateVocabListDialog } from "./CreateVocabListDialog";
+import { useToast } from "@/hooks/use-toast";
 import type { Word } from "@shared/schema";
 
 interface WordCardProps {
@@ -13,6 +14,7 @@ interface WordCardProps {
 }
 
 export function WordCard({ word, index }: WordCardProps) {
+  const { toast } = useToast();
   const [isExpanded, setIsExpanded] = useState(false);
   const { mutate: updateProgress, isPending } = useUpdateWordProgress();
   const { data: lists } = useVocabLists();
@@ -103,7 +105,7 @@ export function WordCard({ word, index }: WordCardProps) {
             transition={{ duration: 0.2 }}
             className="bg-secondary/30 border-t border-border/50"
           >
-            <div className="p-4 space-y-4 pb-6">
+            <div className="p-4 space-y-4 pb-6 w-full max-w-md mx-auto">
               <div className="space-y-1">
                 <span className="text-xs font-semibold text-primary uppercase tracking-wider">Definition</span>
                 <p className="text-sm text-foreground/80 leading-relaxed">{word.definition}</p>
@@ -115,10 +117,10 @@ export function WordCard({ word, index }: WordCardProps) {
                   <img
                     src={word.imageUrl}
                     alt={word.term}
-                    width={640}
-                    height={256}
+                    width={320}
+                    height={160}
                     loading="lazy"
-                    className="w-full max-h-64 object-cover rounded-xl border border-border/60"
+                    className="block w-full max-w-[min(100%,300px)] md:max-w-[280px] max-h-48 md:max-h-40 object-cover rounded-xl border border-border/60 mx-auto md:mx-0"
                   />
                 </div>
               )}
@@ -191,6 +193,14 @@ export function WordCard({ word, index }: WordCardProps) {
                         });
                       } catch (err) {
                         console.error(err);
+                        toast({
+                          variant: "destructive",
+                          title: "Could not add to list",
+                          description:
+                            err instanceof Error
+                              ? err.message
+                              : "Check that you are logged in and try again.",
+                        });
                       }
                     }}
                     disabled={!selectedListId || addWordToList.isPending}
@@ -227,6 +237,14 @@ export function WordCard({ word, index }: WordCardProps) {
             });
           } catch (err) {
             console.error(err);
+            toast({
+              variant: "destructive",
+              title: "Could not add to list",
+              description:
+                err instanceof Error
+                  ? err.message
+                  : "Check that you are logged in and try again.",
+            });
           }
         }}
       />
