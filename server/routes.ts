@@ -9,6 +9,7 @@ import { registerImageRoutes } from "./replit_integrations/image";
 import { db } from "./db";
 import { userStreak } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import { anthropic } from "./anthropic";
 
 declare module "express-session" {
   interface SessionData {
@@ -237,6 +238,67 @@ export async function registerRoutes(
     if (!req.session.userId) return res.json({ streakCount: 0 });
     const [row] = await db.select().from(userStreak).where(eq(userStreak.userId, req.session.userId));
     res.json({ streakCount: row?.streakCount ?? 0 });
+  });
+
+  // Adventure chat endpoint — stateless, frontend sends full history
+  app.post("/api/adventure/message", async (req, res) => {
+    try {
+      const { messages, turnNumber } = req.body;
+
+      if (!Array.isArray(messages) || messages.length === 0) {
+        return res.status(400).json({ error: "messages array is required" });
+      }
+
+      const isFinalTurn = turnNumber >= 5;
+
+      let systemPrompt = "You are a storyteller guiding a language learning adventure. Narrate an interactive story where the user makes choices to progress. Keep responses to 2-3 short paragraphs. End each response with a clear choice or question for the user. Use vivid but simple language appropriate for language learners. Stay in character as the narrator.";
+
+      if (isFinalTurn) {
+        systemPrompt += "\n\nThis is the final turn of the adventure. Wrap up the story with a satisfying conclusion based on the user's choices. Do NOT offer new choices. End with a brief, memorable closing line.";
+      }
+
+      const claudeMessages = messages
+        .filter((m: { role: string }) => m.role === "user" || m.role === "assistant")
+        .map((m: { role: string; content: string }) => ({
+          role: m.role as "user" | "assistant",
+          content: m.content,
+        }));
+
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+
+      const stream = anthropic.messages.stream({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: claudeMessages,
+      });
+
+      stream.on("text", (text) => {
+        res.write(`data: ${JSON.stringify({ type: "content", content: text })}\n\n`);
+      });
+
+      stream.on("end", () => {
+        res.write(`data: ${JSON.stringify({ type: "done", turnNumber, isComplete: isFinalTurn })}\n\n`);
+        res.end();
+      });
+
+      stream.on("error", (error) => {
+        console.error("Claude stream error:", error);
+        if (res.headersSent) {
+          res.write(`data: ${JSON.stringify({ type: "error", error: "Failed to generate response" })}\n\n`);
+          res.end();
+        } else {
+          res.status(500).json({ error: "Failed to generate response" });
+        }
+      });
+    } catch (error) {
+      console.error("Error in adventure chat:", error);
+      if (!res.headersSent) {
+        res.status(500).json({ error: "Failed to process message" });
+      }
+    }
   });
 
   // Seed data on startup
