@@ -25,3 +25,27 @@ export function useWords() {
     },
   });
 }
+
+export function useWordLookup(term: string | null) {
+  return useQuery({
+    queryKey: ["/api/word-lookup", term?.toLowerCase()],
+    queryFn: async () => {
+      if (!term) return null;
+      const res = await fetch(
+        `/api/word-lookup/${encodeURIComponent(term.toLowerCase())}`,
+        { credentials: "include" }
+      );
+      if (!res.ok) return null;
+      return res.json() as Promise<{
+        wordId: number;
+        term: string;
+        definition: string;
+        phonetic: string | null;
+        audioUrl: string | null;
+        imageUrl: string | null;
+      }>;
+    },
+    enabled: !!term && term.trim().length > 0,
+    staleTime: 1000 * 60 * 60,
+  });
+}

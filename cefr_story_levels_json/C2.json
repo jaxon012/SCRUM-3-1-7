@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "readingSpeedWordsPerMinute": 130,
+  "format": "one file per CEFR level",
+  "level": "C2",
+  "description": "Proficient",
+  "stories": [
+    {
+      "id": "C2-01",
+      "order": 1,
+      "title": "Precision",
+      "sentenceCount": 2,
+      "wordCount": 27,
+      "estimatedReadSeconds": 12,
+      "text": "Precision in language is not merely a technical skill. It reflects the speaker’s ability to distinguish between what is approximately true and what is exactly meant."
+    },
+    {
+      "id": "C2-02",
+      "order": 2,
+      "title": "Ambition",
+      "sentenceCount": 2,
+      "wordCount": 29,
+      "estimatedReadSeconds": 13,
+      "text": "Ambition can be admirable when it is disciplined by principle. Left unchecked, however, it has a tendency to disguise selfishness as excellence and urgency as necessity."
+    },
+    {
+      "id": "C2-03",
+      "order": 3,
+      "title": "Memory",
+      "sentenceCount": 2,
+      "wordCount": 30,
+      "estimatedReadSeconds": 14,
+      "text": "Memory is less stable than most people assume. What feels vivid and trustworthy may still be shaped by emotion, repetition, and the subtle influence of later experience."
+    },
+    {
+      "id": "C2-04",
+      "order": 4,
+      "title": "Public Opinion",
+      "sentenceCount": 2,
+      "wordCount": 31,
+      "estimatedReadSeconds": 14,
+      "text": "Public opinion often appears decisive long before it becomes informed. In fast-moving environments, confidence spreads more quickly than caution, even when the evidence remains incomplete or contradictory."
+    },
+    {
+      "id": "C2-05",
+      "order": 5,
+      "title": "Restraint",
+      "sentenceCount": 2,
+      "wordCount": 33,
+      "estimatedReadSeconds": 15,
+      "text": "Restraint is frequently mistaken for passivity by those who value visible action above all else. In reality, deliberate restraint may require more strength than immediate reaction ever does."
+    },
+    {
+      "id": "C2-06",
+      "order": 6,
+      "title": "Institutions and Trust",
+      "sentenceCount": 3,
+      "wordCount": 48,
+      "estimatedReadSeconds": 22,
+      "text": "Institutions rely on trust in ways that are often invisible until that trust weakens. Once credibility begins to erode, even neutral decisions are interpreted with suspicion. Rebuilding confidence is possible, but it is slower and more demanding than many leaders anticipate."
+    },
+    {
+      "id": "C2-07",
+      "order": 7,
+      "title": "The Cost of Convenience",
+      "sentenceCount": 4,
+      "wordCount": 61,
+      "estimatedReadSeconds": 28,
+      "text": "Convenience has become one of the dominant values of modern life. People naturally prefer systems that reduce effort, save time, and remove friction from daily routines. Yet convenience is not a neutral good. What it simplifies in one area may quietly diminish patience, skill, or attentiveness in another."
+    },
+    {
+      "id": "C2-08",
+      "order": 8,
+      "title": "Moral Clarity",
+      "sentenceCount": 5,
+      "wordCount": 74,
+      "estimatedReadSeconds": 34,
+      "text": "Moral clarity is attractive because it promises decisiveness without confusion. The difficulty is that genuinely complex situations rarely submit to simple formulas. People may know the right principle and still disagree about how it applies. That does not mean truth is impossible to find. It means that serious moral reasoning requires patience equal to conviction."
+    },
+    {
+      "id": "C2-09",
+      "order": 9,
+      "title": "Language and Power",
+      "sentenceCount": 6,
+      "wordCount": 87,
+      "estimatedReadSeconds": 40,
+      "text": "Language does more than describe reality; it also shapes how reality is perceived. The terms chosen in public debate can elevate certain concerns while hiding others from view. For that reason, wording is never completely innocent in political, legal, or cultural conflict. A single phrase can soften responsibility or intensify blame. This is why careful readers pay attention not only to what is being argued, but also to how the argument is framed."
+    },
+    {
+      "id": "C2-10",
+      "order": 10,
+      "title": "Wisdom",
+      "sentenceCount": 7,
+      "wordCount": 101,
+      "estimatedReadSeconds": 47,
+      "text": "Wisdom is often confused with intelligence, experience, or education, though it is not identical to any of them. An intelligent person may still judge poorly. An experienced person may still repeat old mistakes. A highly educated person may still lack proportion or self-awareness. Wisdom involves the disciplined ability to see what matters most within a complicated situation. It combines judgment, humility, timing, and moral seriousness. For that reason, it remains one of the rarest human qualities."
+    }
+  ]
+}

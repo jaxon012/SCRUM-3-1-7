@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "readingSpeedWordsPerMinute": 130,
+  "format": "one file per CEFR level",
+  "level": "B1",
+  "description": "Intermediate",
+  "stories": [
+    {
+      "id": "B1-01",
+      "order": 1,
+      "title": "A Late Movie",
+      "sentenceCount": 2,
+      "wordCount": 18,
+      "estimatedReadSeconds": 8,
+      "text": "I watched a movie late last night. It was funny, but the ending was more thoughtful than I expected."
+    },
+    {
+      "id": "B1-02",
+      "order": 2,
+      "title": "Coffee Shop Study",
+      "sentenceCount": 2,
+      "wordCount": 20,
+      "estimatedReadSeconds": 9,
+      "text": "I like studying in coffee shops when my apartment feels too noisy. The quiet music helps me focus on my homework."
+    },
+    {
+      "id": "B1-03",
+      "order": 3,
+      "title": "Daily Exercise",
+      "sentenceCount": 2,
+      "wordCount": 21,
+      "estimatedReadSeconds": 10,
+      "text": "I try to exercise several times each week. Even a short walk can improve my mood and clear my mind."
+    },
+    {
+      "id": "B1-04",
+      "order": 4,
+      "title": "Losing My Keys",
+      "sentenceCount": 2,
+      "wordCount": 22,
+      "estimatedReadSeconds": 10,
+      "text": "Yesterday, I lost my keys after class. I checked my backpack twice before I realized I had left them at work."
+    },
+    {
+      "id": "B1-05",
+      "order": 5,
+      "title": "Music and Focus",
+      "sentenceCount": 2,
+      "wordCount": 24,
+      "estimatedReadSeconds": 11,
+      "text": "When I need to concentrate, I usually play instrumental music. Lyrics distract me, but simple melodies help me stay calm."
+    },
+    {
+      "id": "B1-06",
+      "order": 6,
+      "title": "A Busy Saturday",
+      "sentenceCount": 3,
+      "wordCount": 35,
+      "estimatedReadSeconds": 16,
+      "text": "Last Saturday was much busier than I had planned. I cleaned my room, finished homework, and met a friend for lunch. By the evening, I was tired but satisfied with the day."
+    },
+    {
+      "id": "B1-07",
+      "order": 7,
+      "title": "Travel Lesson",
+      "sentenceCount": 4,
+      "wordCount": 46,
+      "estimatedReadSeconds": 21,
+      "text": "Traveling with my family taught me to be more flexible. Not every plan worked the way we expected. Sometimes the weather changed, and sometimes the bus arrived late. Even so, we enjoyed the trip because we stayed positive."
+    },
+    {
+      "id": "B1-08",
+      "order": 8,
+      "title": "Improving My English",
+      "sentenceCount": 5,
+      "wordCount": 56,
+      "estimatedReadSeconds": 26,
+      "text": "One of my biggest goals is to improve my English this year. I have started reading short articles several times a week. I also try to speak more during class discussions. At first, this felt uncomfortable for me. Now I can see that regular practice really works."
+    },
+    {
+      "id": "B1-09",
+      "order": 9,
+      "title": "Phone Habits",
+      "sentenceCount": 6,
+      "wordCount": 65,
+      "estimatedReadSeconds": 30,
+      "text": "Many people say they want less screen time, but changing habits is not easy. Phones make life more convenient in many ways. We use them for maps, messages, and quick answers. However, they also interrupt conversations and study time. I have noticed this in my own life. That is why I now leave my phone in another room when I work."
+    },
+    {
+      "id": "B1-10",
+      "order": 10,
+      "title": "What Friendship Means",
+      "sentenceCount": 7,
+      "wordCount": 77,
+      "estimatedReadSeconds": 36,
+      "text": "Friendship has become more important to me as I have grown older. Good friends do not simply make life more entertaining. They also give honest advice when we need it. A real friend notices when something feels wrong. That person listens carefully instead of changing the subject. Strong friendships take time, trust, and patience. For that reason, I try to treat my close friends with care."
+    }
+  ]
+}

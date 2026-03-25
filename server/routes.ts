@@ -273,6 +273,32 @@ export async function registerRoutes(
     res.json(passage);
   });
 
+  app.get("/api/reading-progress/current", async (req, res) => {
+    const userId = req.session.userId || 1;
+    const passageId = await storage.getCurrentReadingProgress(userId);
+    res.json({ passageId });
+  });
+
+  app.post("/api/reading-progress", async (req, res) => {
+    const userId = req.session.userId || 1;
+    const { passageId } = req.body || {};
+    if (!passageId || isNaN(Number(passageId))) {
+      return res.status(400).json({ message: "passageId required" });
+    }
+    await storage.upsertReadingProgress(userId, Number(passageId));
+    res.json({ ok: true });
+  });
+
+  app.get("/api/reading-progress/level/:level", async (req, res) => {
+    const userId = req.session.userId || 1;
+    const level = Number(req.params.level);
+    if (!level || isNaN(level)) {
+      return res.status(400).json({ message: "Invalid level" });
+    }
+    const passageId = await storage.getLastReadPassageInLevel(userId, level);
+    res.json({ passageId });
+  });
+
   app.post(api.addToVocab.path, async (req, res) => {
     const userId = getAuthenticatedUserId(req, res);
     if (!userId) return;
@@ -283,6 +309,20 @@ export async function registerRoutes(
     }
     const result = await storage.addWordToVocab(term.trim(), userId);
     res.json({ wordId: result.wordId, term: result.term });
+  });
+
+  app.get("/api/word-lookup/:term", async (req, res) => {
+    const term = (req.params.term || "").trim();
+    if (!term) {
+      return res.status(400).json({ message: "term is required" });
+    }
+    try {
+      const result = await storage.createOrGetWordFromTerm(term);
+      res.json(result);
+    } catch (error) {
+      console.error("word-lookup error:", error);
+      res.status(500).json({ message: "Failed to look up word" });
+    }
   });
 
   app.get("/api/streak", async (req, res) => {

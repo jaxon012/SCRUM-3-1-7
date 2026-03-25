@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "readingSpeedWordsPerMinute": 130,
+  "format": "one file per CEFR level",
+  "level": "C1",
+  "description": "Advanced",
+  "stories": [
+    {
+      "id": "C1-01",
+      "order": 1,
+      "title": "Clear Communication",
+      "sentenceCount": 2,
+      "wordCount": 24,
+      "estimatedReadSeconds": 11,
+      "text": "Clear communication involves more than choosing the correct words. It also requires sensitivity to tone, timing, and the emotional state of the listener."
+    },
+    {
+      "id": "C1-02",
+      "order": 2,
+      "title": "Discomfort and Growth",
+      "sentenceCount": 2,
+      "wordCount": 26,
+      "estimatedReadSeconds": 12,
+      "text": "Personal growth rarely develops in environments that feel entirely comfortable. More often, it emerges when people are forced to confront uncertainty, weakness, or change."
+    },
+    {
+      "id": "C1-03",
+      "order": 3,
+      "title": "Leadership",
+      "sentenceCount": 2,
+      "wordCount": 27,
+      "estimatedReadSeconds": 12,
+      "text": "Leadership is frequently misunderstood as control or visibility. In practice, it is more accurately measured by responsibility, restraint, and the ability to earn trust."
+    },
+    {
+      "id": "C1-04",
+      "order": 4,
+      "title": "Culture and Meaning",
+      "sentenceCount": 2,
+      "wordCount": 28,
+      "estimatedReadSeconds": 13,
+      "text": "Culture shapes the meaning of ordinary behavior in subtle but powerful ways. Without that awareness, people may misinterpret actions that were never intended to cause offense."
+    },
+    {
+      "id": "C1-05",
+      "order": 5,
+      "title": "Motivation",
+      "sentenceCount": 2,
+      "wordCount": 29,
+      "estimatedReadSeconds": 13,
+      "text": "Motivation is often strongest at the beginning of a goal and weakest in the middle. That is precisely why discipline matters more than emotion over the long term."
+    },
+    {
+      "id": "C1-06",
+      "order": 6,
+      "title": "Adapting to Change",
+      "sentenceCount": 3,
+      "wordCount": 43,
+      "estimatedReadSeconds": 20,
+      "text": "Change unsettles people because it removes familiar patterns. Even beneficial change can feel threatening when its results remain uncertain. Those who adapt well are not fearless; they simply learn to move forward before they feel fully ready."
+    },
+    {
+      "id": "C1-07",
+      "order": 7,
+      "title": "The Shape of Modern Society",
+      "sentenceCount": 4,
+      "wordCount": 55,
+      "estimatedReadSeconds": 25,
+      "text": "Modern society is shaped by forces that are both visible and hidden. Technology, economics, and culture influence daily life in ways people often take for granted. As a result, many decisions feel personal even when they are shaped by larger systems. Understanding that tension can lead to more thoughtful citizenship."
+    },
+    {
+      "id": "C1-08",
+      "order": 8,
+      "title": "Ethics in Real Life",
+      "sentenceCount": 5,
+      "wordCount": 68,
+      "estimatedReadSeconds": 31,
+      "text": "Ethical decisions are rarely as simple in real life as they appear in theory. Competing responsibilities often pull thoughtful people in opposite directions. A choice that protects one value may weaken another. Because of this, moral judgment depends not only on principles but also on wisdom. That is what makes serious ethical questions so difficult and so important."
+    },
+    {
+      "id": "C1-09",
+      "order": 9,
+      "title": "Innovation and Consequence",
+      "sentenceCount": 6,
+      "wordCount": 80,
+      "estimatedReadSeconds": 37,
+      "text": "Innovation is usually celebrated for the opportunities it creates. New tools can solve old problems, improve efficiency, and expand access to knowledge. Yet innovation also carries unintended consequences that are easy to ignore at first. A system designed for convenience may reduce privacy. A platform built for connection may increase dependency. Progress is valuable, but it should never be treated as automatically harmless."
+    },
+    {
+      "id": "C1-10",
+      "order": 10,
+      "title": "The Value of Perspective",
+      "sentenceCount": 7,
+      "wordCount": 92,
+      "estimatedReadSeconds": 42,
+      "text": "Perspective is one of the most underrated forms of intelligence. It allows people to step outside their immediate reactions and interpret situations more carefully. Without perspective, confidence can become arrogance and disagreement can become hostility. With it, people become more capable of curiosity, patience, and self-correction. That does not mean every opinion deserves equal weight. It means serious understanding requires more than instinct. It requires the humility to admit that our first interpretation may be incomplete."
+    }
+  ]
+}
