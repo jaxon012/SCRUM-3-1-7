@@ -269,11 +269,16 @@ export class DatabaseStorage implements IStorage {
     return rows.length > 0 ? rows[0].passageId : null;
   }
 
-  async updateWordProgress(userWordId: number): Promise<UserWordProgress | undefined> {
+  async updateWordProgress(userWordId: number, userId: number): Promise<UserWordProgress | undefined> {
     const [currentProgress] = await db
       .select()
       .from(userWordProgress)
-      .where(eq(userWordProgress.userWordId, userWordId));
+      .where(
+        and(
+          eq(userWordProgress.userWordId, userWordId),
+          eq(userWordProgress.userId, userId)
+        )
+      );
 
     if (!currentProgress) return undefined;
 
@@ -284,7 +289,12 @@ export class DatabaseStorage implements IStorage {
         status: "mastered",
         lastSeenAt: new Date(),
       })
-      .where(eq(userWordProgress.userWordId, userWordId))
+      .where(
+        and(
+          eq(userWordProgress.userWordId, userWordId),
+          eq(userWordProgress.userId, userId)
+        )
+      )
       .returning();
 
     return updated;
@@ -478,90 +488,4 @@ export class DatabaseStorage implements IStorage {
     const shouldSeedUsers = existingUsers.length === 0;
     const shouldSeedWords = existingWords.length === 0;
     const shouldSeedPassages = existingPassages.length === 0;
-    const shouldSeedProgress = existingUserWordProgress.length === 0;
-
-    if (shouldSeedUsers) {
-      const tomHash = await bcrypt.hash("cantreadyet", 10);
-      const xieHash = await bcrypt.hash("thankyou", 10);
-      const adminHash = await bcrypt.hash("password", 10);
-      await db.insert(user).values([
-        { email: "tom@example.com", displayName: "Tom Sawyer", username: "TomSawyer", password: tomHash, passwordPlain: "cantreadyet", role: "user" },
-        { email: "xiexie@example.com", displayName: "Xie Xie", username: "XieXie", password: xieHash, passwordPlain: "thankyou", role: "user" },
-        { email: "admin@lingoquest.com", displayName: "Super Admin", username: "SuperAdmin", password: adminHash, passwordPlain: "password", role: "admin" },
-      ]);
-    } else {
-      // Ensure SuperAdmin exists even if DB was already seeded
-      const adminExists = await this.getUserByUsername("SuperAdmin");
-      if (!adminExists) {
-        const adminHash = await bcrypt.hash("password", 10);
-        await db.insert(user).values({
-          email: "admin@lingoquest.com", displayName: "Super Admin", username: "SuperAdmin",
-          password: adminHash, passwordPlain: "password", role: "admin",
-        });
-      }
-    }
-
-    if (shouldSeedWords) {
-      await db.execute(sql`
-        INSERT INTO word (term, definition, phonetic, audio_url)
-        VALUES
-          ('application', 'A formal request to an authority for something.', '/ˌapləˈkāSH(ə)n/', 'https://example.com/application.mp3'),
-          ('work', 'Activity involving mental or physical effort done in order to achieve a purpose or result.', '/wərk/', 'https://example.com/work.mp3'),
-          ('employee', 'A person employed for wages or salary, especially at non-executive level.', '/əmˈploiē/', 'https://example.com/employee.mp3'),
-          ('hours', 'A period of time equal to sixty minutes.', '/ˈou(ə)rz/', 'https://example.com/hours.mp3'),
-          ('shift', 'One of two or more recurring periods in which different groups of workers do the same jobs in relay.', '/SHift/', 'https://example.com/shift.mp3'),
-          ('matey', 'A familiar and sometimes hostile form of address, especially to a stranger.', '/ˈmādē/', 'https://example.com/matey.mp3')
-      `);
-    }
-
-    // Always backfill missing images (including previously seeded words).
-    const seededWords = await db.select().from(word);
-    const missingImages = seededWords.filter((w) => !w.imageUrl);
-
-    // Avoid hammering the external API on every restart if many images are missing.
-    const MAX_BACKFILL_PER_START = 25;
-    const toBackfill = missingImages.slice(0, MAX_BACKFILL_PER_START);
-
-    for (const w of toBackfill) {
-      try {
-        // Build a richer search query using both term and definition
-        const combinedQuery = `${w.term} - ${w.definition}`;
-        const imageUrl = await fetchPexelsImageUrl(combinedQuery);
-        if (!imageUrl) continue;
-
-        await db
-          .update(word)
-          .set({ imageUrl })
-          .where(eq(word.wordId, w.wordId));
-      } catch (error) {
-        console.error(`Failed to fetch Pexels image for word "${w.term}":`, error);
-      }
-    }
-
-    if (shouldSeedProgress) {
-      // Basic progress for Tom
-      await db.execute(sql`
-        INSERT INTO user_word_progress (user_id, word_id, status, times_seen, last_seen_at)
-        SELECT 1, word_id, 'new', 0, NULL FROM word
-      `);
-    }
-
-    if (shouldSeedPassages) {
-      await db.execute(sql`
-        INSERT INTO passage (title, body_text, reading_level, audio_url, story_order)
-        VALUES
-          ('Treasure Island Excerpt', 'Well, then, said he, this is the berth for me. Here you, matey, he cried to the man who trundled the barrow; bring up alongside and help up my chest. I''ll stay here a bit, he continued.', 2, 'https://example.com/treasure_island.mp3', 0)
-      `);
-    }
-
-    const [cefrCheck] = await db
-      .select({ cnt: count() })
-      .from(passage)
-      .where(sql`story_order > 0`);
-    if (Number(cefrCheck.cnt) === 0) {
-      await this.seedCefrStories();
-    }
-  }
-}
-
-export const storage = new DatabaseStorage();
+    const shouldSeedProgress = existing
