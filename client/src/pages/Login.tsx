@@ -1,6 +1,8 @@
 import { Link } from "wouter";
 import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ME_QUERY_KEY } from "@/hooks/use-me";
+import { clearVocabSortPrefsFromStorage } from "@/lib/vocab-prefs-storage";
 import { useLocation } from "wouter";
 
 export default function Login() {
@@ -11,7 +13,7 @@ export default function Login() {
   const queryClient = useQueryClient();
 
   const { data: currentUser, isLoading } = useQuery({
-    queryKey: ["me"],
+    queryKey: ME_QUERY_KEY,
     queryFn: () => fetch("/api/me", { credentials: "include" }).then((r) => r.json()),
   });
 
@@ -33,7 +35,9 @@ export default function Login() {
         return r.json();
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["me"] });
+      clearVocabSortPrefsFromStorage();
+      queryClient.clear();
+      void queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY });
       setUsername("");
       setPassword("");
       setError("");

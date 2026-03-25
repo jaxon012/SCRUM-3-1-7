@@ -1,4 +1,5 @@
 import { Layout } from "@/components/Layout";
+import { ME_QUERY_KEY } from "@/hooks/use-me";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useState } from "react";
@@ -18,7 +19,7 @@ export default function Admin() {
   const [, navigate] = useLocation();
 
   const { data: currentUser } = useQuery({
-    queryKey: ["me"],
+    queryKey: ME_QUERY_KEY,
     queryFn: () => fetch("/api/me", { credentials: "include" }).then(r => r.json()),
   });
 

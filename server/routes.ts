@@ -22,12 +22,22 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   const getAuthenticatedUserId = (req: Request, res: Response): number | null => {
-    if (!req.session.userId) {
+    const raw = req.session.userId;
+    const userId =
+      typeof raw === "number" && Number.isFinite(raw)
+        ? raw
+        : Number(raw);
+    if (!Number.isFinite(userId) || userId <= 0) {
       res.status(401).json({ message: "Unauthorized" });
       return null;
     }
-    return req.session.userId;
+    return userId;
   };
+
+  app.use("/api", (_req, res, next) => {
+    res.setHeader("Cache-Control", "private, no-store, must-revalidate");
+    next();
+  });
 
   app.use(session({
     secret: "lingoquest-secret-key",
@@ -50,24 +60,35 @@ export async function registerRoutes(
     if (!isValid) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
-    req.session.userId = user.userId;
 
-    // Update streak on login
-    const today = new Date().toISOString().split("T")[0];
-    const [existing] = await db.select().from(userStreak).where(eq(userStreak.userId, user.userId));
-    if (!existing) {
-      await db.insert(userStreak).values({ userId: user.userId, streakCount: 1, lastActivityDate: today });
-    } else {
-      const last = existing.lastActivityDate ? new Date(existing.lastActivityDate) : null;
-      const diffDays = last ? Math.floor((Date.now() - last.getTime()) / 86400000) : 999;
-      if (diffDays === 1) {
-        await db.update(userStreak).set({ streakCount: existing.streakCount + 1, lastActivityDate: today }).where(eq(userStreak.userId, user.userId));
-      } else if (diffDays >= 2) {
-        await db.update(userStreak).set({ streakCount: 0, lastActivityDate: today }).where(eq(userStreak.userId, user.userId));
+    req.session.regenerate(async (regenErr) => {
+      if (regenErr) {
+        console.error("Session regenerate error:", regenErr);
+        return res.status(500).json({ message: "Could not start session" });
       }
-    }
+      req.session.userId = user.userId;
 
-    res.json({ userId: user.userId, displayName: user.displayName, username: user.username, role: user.role });
+      try {
+        const today = new Date().toISOString().split("T")[0];
+        const [existing] = await db.select().from(userStreak).where(eq(userStreak.userId, user.userId));
+        if (!existing) {
+          await db.insert(userStreak).values({ userId: user.userId, streakCount: 1, lastActivityDate: today });
+        } else {
+          const last = existing.lastActivityDate ? new Date(existing.lastActivityDate) : null;
+          const diffDays = last ? Math.floor((Date.now() - last.getTime()) / 86400000) : 999;
+          if (diffDays === 1) {
+            await db.update(userStreak).set({ streakCount: existing.streakCount + 1, lastActivityDate: today }).where(eq(userStreak.userId, user.userId));
+          } else if (diffDays >= 2) {
+            await db.update(userStreak).set({ streakCount: 0, lastActivityDate: today }).where(eq(userStreak.userId, user.userId));
+          }
+        }
+
+        res.json({ userId: user.userId, displayName: user.displayName, username: user.username, role: user.role });
+      } catch (e) {
+        console.error("Login streak update error:", e);
+        res.status(500).json({ message: "Internal server error" });
+      }
+    });
   });
 
   app.post("/api/signup", async (req, res) => {
@@ -84,8 +105,15 @@ export async function registerRoutes(
       return res.status(409).json({ message: "Email already in use" });
     }
     const user = await storage.createUserWithHash({ username, password, email, displayName });
-    req.session.userId = user.userId;
-    res.status(201).json({ userId: user.userId, displayName: user.displayName, username: user.username, role: user.role });
+
+    req.session.regenerate((regenErr) => {
+      if (regenErr) {
+        console.error("Session regenerate error:", regenErr);
+        return res.status(500).json({ message: "Could not start session" });
+      }
+      req.session.userId = user.userId;
+      res.status(201).json({ userId: user.userId, displayName: user.displayName, username: user.username, role: user.role });
+    });
   });
 
   app.post("/api/logout", (req, res) => {
@@ -93,16 +121,20 @@ export async function registerRoutes(
   });
 
   app.get("/api/me", async (req, res) => {
-    if (!req.session.userId) return res.json(null);
-    const user = await storage.getUser(req.session.userId);
+    const sid = req.session.userId;
+    const userId =
+      typeof sid === "number" && Number.isFinite(sid) ? sid : Number(sid);
+    if (!Number.isFinite(userId) || userId <= 0) return res.json(null);
+    const user = await storage.getUser(userId);
     if (!user) return res.json(null);
     res.json({ userId: user.userId, displayName: user.displayName, username: user.username, role: user.role });
   });
 
   // Admin routes
   app.get("/api/admin/users", async (req, res) => {
-    if (!req.session.userId) return res.status(401).json({ message: "Not authenticated" });
-    const currentUser = await storage.getUser(req.session.userId);
+    const adminSessionUserId = getAuthenticatedUserId(req, res);
+    if (!adminSessionUserId) return;
+    const currentUser = await storage.getUser(adminSessionUserId);
     if (!currentUser || currentUser.role !== "admin") {
       return res.status(403).json({ message: "Forbidden" });
     }

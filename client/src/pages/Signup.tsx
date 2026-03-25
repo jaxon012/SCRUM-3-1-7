@@ -1,6 +1,8 @@
 import { Layout } from "@/components/Layout";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ME_QUERY_KEY } from "@/hooks/use-me";
+import { clearVocabSortPrefsFromStorage } from "@/lib/vocab-prefs-storage";
 import { useLocation } from "wouter";
 
 export default function Signup() {
@@ -31,7 +33,9 @@ export default function Signup() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["me"] });
+      clearVocabSortPrefsFromStorage();
+      queryClient.clear();
+      void queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY });
       navigate("/");
     },
     onError: (err: Error) => setError(err.message),
