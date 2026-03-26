@@ -13,7 +13,7 @@ import { CreateVocabListDialog } from "@/components/CreateVocabListDialog";
 
 const MAX_TURNS = 5;
 
-const DEFAULT_ADVENTURE_SCENE_IMAGE = "/adventure-hero.webp";
+const DEFAULT_ADVENTURE_SCENE_IMAGE = "/adventure-hero.png";
 
 /** Turn the latest narrator text into a visual prompt for the image API. */
 function buildSceneImagePrompt(storyBeat: string): string {

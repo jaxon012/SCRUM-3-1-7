@@ -55,21 +55,34 @@ export default function Login() {
       <div className="flex-1 px-4 py-10 md:py-16">
         <div className="grid md:grid-cols-2 gap-8 md:gap-10 items-center max-w-5xl mx-auto">
           {/* Welcome copy */}
-          <div className="space-y-5 order-2 md:order-1">
-            <div className="inline-flex items-center rounded-full border border-border bg-card px-5 py-2 text-lg font-bold tracking-wide text-foreground">
-              LingoQuest
+          <div className="space-y-5 order-1 md:order-1">
+            <div className="flex justify-center">
+              <div className="text-center">
+                <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground leading-tight">
+                  LingoQuest
+                </h2>
+              </div>
             </div>
 
-            <div>
+            <div className="flex justify-center">
+              <img
+                src="/login-mascot-tan.png"
+                alt="LingoQuest mascot"
+                className="w-52 h-52 object-contain rounded-lg border border-border/50"
+                loading="eager"
+              />
+            </div>
+
+            <div className="text-center">
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
                 Learn a little every day.
               </h2>
-              <p className="mt-3 text-muted-foreground max-w-md">
+              <p className="mt-3 text-muted-foreground max-w-md mx-auto">
                 Build your vocabulary, practice reading, and keep your streak going.
               </p>
             </div>
 
-            <ul className="space-y-2 text-sm text-muted-foreground">
+            <ul className="space-y-2 text-sm text-muted-foreground text-center transform translate-x-4">
               <li className="flex items-center gap-2">
                 <span className="text-primary">✓</span>
                 Daily words
@@ -86,7 +99,7 @@ export default function Login() {
           </div>
 
           {/* Login form card */}
-          <div className="order-1 md:order-2">
+          <div className="order-2 md:order-2">
             <div className="rounded-3xl border border-border/70 bg-card/90 p-6 shadow-xl backdrop-blur-sm">
               <h3 className="text-xl font-semibold text-foreground mb-1">Welcome back</h3>
               <p className="text-sm text-muted-foreground mb-4">Sign in to continue.</p>
