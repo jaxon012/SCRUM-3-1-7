@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  /* Palette: #F5EFE6 / #E8DFCA / #AEBDCA / #7895B2 */
+  /* Palette: warm neutrals + primary purple gradient */
   --font-sans: 'Outfit', sans-serif;
   --font-display: 'Space Grotesk', sans-serif;
 
@@ -19,16 +19,16 @@
   --popover-foreground: 210 30% 20%;
   --popover-border: 42 30% 78%;
 
-  --primary: 210 27% 58%;         /* #7895B2 steel blue */
+  --primary: 243 75% 59%;
   --primary-foreground: 0 0% 98%;
 
-  --secondary: 208 21% 74%;       /* #AEBDCA muted blue-gray */
+  --secondary: 262 83% 74%;
   --secondary-foreground: 210 30% 20%;
 
   --muted: 42 40% 85%;
   --muted-foreground: 210 20% 35%;
 
-  --accent: 208 21% 74%;          /* #AEBDCA */
+  --accent: 262 83% 58%;
   --accent-foreground: 210 30% 20%;
 
   --destructive: 0 72% 51%;
@@ -36,7 +36,7 @@
 
   --border: 42 25% 80%;
   --input: 42 25% 80%;
-  --ring: 210 27% 58%;
+  --ring: 243 75% 59%;
 
   --radius: 1rem;
 }

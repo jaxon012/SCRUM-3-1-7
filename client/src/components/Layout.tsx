@@ -85,9 +85,12 @@ export function Layout({ children, title, showBack = false, backOnly = false }: 
                   </h1>
                 ) : (
                   <Link href="/" className="flex items-center gap-2">
-                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-xl">
-                      L
-                    </div>
+                    <img
+                      src="/dragon-face.png"
+                      alt="LingoQuest"
+                      className="w-10 h-10 rounded-lg object-cover border border-border/50"
+                      loading="eager"
+                    />
                     <div className="flex flex-col leading-tight">
                       <span className="font-display font-bold text-3xl md:text-4xl">LingoQuest</span>
                       <span className="text-sm text-muted-foreground">

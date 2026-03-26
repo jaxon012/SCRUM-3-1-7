@@ -114,7 +114,7 @@ function UserRow({ user }: { user: AdminUser }) {
         <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap ${
           user.role === "admin"
             ? "bg-amber-100 text-amber-800"
-            : "bg-blue-100 text-blue-800"
+            : "bg-primary/10 text-primary"
         }`}>
           {user.role}
         </span>
