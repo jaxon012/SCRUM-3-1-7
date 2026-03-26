@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ME_QUERY_KEY } from "@/hooks/use-me";
 import { clearVocabSortPrefsFromStorage } from "@/lib/vocab-prefs-storage";
+import { TextToSpeechWidget } from "./TextToSpeechWidget";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -201,6 +202,9 @@ export function Layout({ children, title, showBack = false, backOnly = false }: 
         </div>
       </nav>
       )}
+
+      {/* Read-aloud helper — visible on all pages */}
+      <TextToSpeechWidget />
     </div>
   );
 }
