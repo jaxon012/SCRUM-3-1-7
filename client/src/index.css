@@ -125,3 +125,91 @@
 .animate-progress-bar {
   animation: progress-bar 1s ease-out 0.2s both;
 }
+
+/* ── Text-to-Speech Widget ───────────────────────────────────────── */
+
+/* Body cursor when read-aloud mode is active */
+body.tts-reading-mode,
+body.tts-reading-mode * {
+  cursor: text !important;
+}
+
+/* Main floating button — base */
+.tts-main-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: none;
+  outline: none;
+}
+
+.tts-main-btn:focus-visible {
+  outline: 3px solid hsl(var(--primary));
+  outline-offset: 3px;
+}
+
+/* Idle state: muted purple gradient */
+.tts-main-btn--idle {
+  background: linear-gradient(135deg, #c084fc 0%, #a855f7 100%);
+}
+.tts-main-btn--idle:hover {
+  transform: scale(1.08);
+  box-shadow: 0 10px 28px rgba(139, 92, 246, 0.45);
+}
+
+/* Active state: vivid pink-to-purple + pulse glow */
+.tts-main-btn--active {
+  background: linear-gradient(135deg, #f0abfc 0%, #a855f7 50%, #7c3aed 100%);
+  animation: tts-pulse 2s ease-in-out infinite;
+}
+
+@keyframes tts-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.6),
+                0 8px 24px rgba(139, 92, 246, 0.4);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 0 0 10px rgba(168, 85, 247, 0),
+                0 12px 32px rgba(139, 92, 246, 0.55);
+  }
+}
+
+/* Small pause/stop control buttons */
+.tts-control-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  background: white;
+  border: 1.5px solid #e9d5ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer !important;
+}
+.tts-control-btn:hover {
+  transform: scale(1.12);
+  box-shadow: 0 6px 16px rgba(139, 92, 246, 0.3);
+}
+
+/* Hint label */
+.tts-hint {
+  background: linear-gradient(135deg, #a855f7, #7c3aed);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+  cursor: default !important;
+}
