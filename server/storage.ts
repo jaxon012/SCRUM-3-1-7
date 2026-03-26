@@ -14,7 +14,7 @@ import {
   type Passage,
   type VocabList,
 } from "@shared/schema";
-import { eq, and, sql, count, asc, desc } from "drizzle-orm";
+import { eq, and, sql, count, asc, desc, inArray } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import { fetchPexelsPhotoUrl } from "./pexels";
 
@@ -40,11 +40,15 @@ export interface IStorage {
   getLastReadPassageInLevel(userId: number, level: number): Promise<number | null>;
 
   updateWordProgress(userWordId: number, userId: number): Promise<UserWordProgress | undefined>;
+  markWordAsMastered(wordId: number, userId: number): Promise<UserWordProgress>;
   addWordToVocab(term: string, userId: number): Promise<Word>;
 
   getVocabLists(userId: number): Promise<(VocabList & { wordCount: number })[]>;
   createVocabList(userId: number, name: string): Promise<VocabList>;
-  getVocabListWords(userId: number, listId: number): Promise<Word[]>;
+  getVocabListWords(
+    userId: number,
+    listId: number
+  ): Promise<(Word & { userWordProgress?: UserWordProgress })[]>;
   addWordToList(userId: number, listId: number, wordId: number): Promise<{ vocabListWordId: number; vocabListId: number; wordId: number } | null>;
 
   createOrGetWordFromTerm(term: string): Promise<Word>;
@@ -255,6 +259,50 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
+  async markWordAsMastered(wordId: number, userId: number): Promise<UserWordProgress> {
+    const [currentProgress] = await db
+      .select()
+      .from(userWordProgress)
+      .where(
+        and(
+          eq(userWordProgress.userId, userId),
+          eq(userWordProgress.wordId, wordId),
+        ),
+      );
+
+    if (currentProgress) {
+      const [updated] = await db
+        .update(userWordProgress)
+        .set({
+          timesSeen: currentProgress.timesSeen + 1,
+          status: "mastered",
+          lastSeenAt: new Date(),
+        })
+        .where(
+          and(
+            eq(userWordProgress.userWordId, currentProgress.userWordId),
+            eq(userWordProgress.userId, userId),
+          ),
+        )
+        .returning();
+      // If the row existed, returning() should always give us a row back.
+      return updated ?? (currentProgress as UserWordProgress);
+    }
+
+    const [created] = await db
+      .insert(userWordProgress)
+      .values({
+        userId,
+        wordId,
+        status: "mastered",
+        timesSeen: 1,
+        lastSeenAt: new Date(),
+      })
+      .returning();
+
+    return created;
+  }
+
   async addWordToVocab(term: string, userId: number): Promise<Word> {
     const cleanTerm = term.trim();
     if (!cleanTerm) {
@@ -307,7 +355,10 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  async getVocabListWords(userId: number, listId: number): Promise<Word[]> {
+  async getVocabListWords(
+    userId: number,
+    listId: number
+  ): Promise<(Word & { userWordProgress?: UserWordProgress })[]> {
     const [list] = await db
       .select()
       .from(vocabList)
@@ -316,7 +367,7 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
 
-    const rows = await db
+    const words = await db
       .select({
         wordId: word.wordId,
         term: word.term,
@@ -329,7 +380,22 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(word, eq(vocabListWord.wordId, word.wordId))
       .where(eq(vocabListWord.vocabListId, listId));
 
-    return rows as Word[];
+    if (!words.length) return [];
+
+    const wordIds = words.map((w) => w.wordId);
+
+    // Attach per-user progress so WordCard can enable "Mark as Mastered" in list mode.
+    const progressRecords = await db
+      .select()
+      .from(userWordProgress)
+      .where(and(eq(userWordProgress.userId, userId), inArray(userWordProgress.wordId, wordIds)));
+
+    const progressMap = new Map(progressRecords.map((p) => [p.wordId, p]));
+
+    return words.map((w) => ({
+      ...w,
+      userWordProgress: progressMap.get(w.wordId),
+    }));
   }
 
   async addWordToList(

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Sparkles, Check } from "lucide-react";
 import { AudioPlayer } from "./AudioPlayer";
-import { useUpdateWordProgress } from "@/hooks/use-word-progress";
+import { useMarkWordAsMasteredByWordId, useUpdateWordProgress } from "@/hooks/use-word-progress";
 import { useVocabLists, useAddWordToVocabList, useCreateVocabList } from "@/hooks/use-vocab-lists";
 import { CreateVocabListDialog } from "./CreateVocabListDialog";
 import { useToast } from "@/hooks/use-toast";
@@ -16,7 +16,8 @@ interface WordCardProps {
 export function WordCard({ word, index }: WordCardProps) {
   const { toast } = useToast();
   const [isExpanded, setIsExpanded] = useState(false);
-  const { mutate: updateProgress, isPending } = useUpdateWordProgress();
+  const { mutate: updateProgress, isPending: isUpdatePending } = useUpdateWordProgress();
+  const { mutate: markMasteredByWordId, isPending: isMarkPending } = useMarkWordAsMasteredByWordId();
   const { data: lists } = useVocabLists();
   const addWordToList = useAddWordToVocabList();
   const createList = useCreateVocabList();
@@ -32,9 +33,12 @@ export function WordCard({ word, index }: WordCardProps) {
     e.stopPropagation(); // Prevent card collapse when clicking the button
     if (userWordId) {
       updateProgress({ userWordId });
-    } else {
-      console.warn("userWordId is undefined - no progress record for this word");
+      return;
     }
+
+    // In vocab-list mode, list words may not include a `userWordId` yet.
+    // Fall back to marking mastered by `wordId` (server will create progress if missing).
+    markMasteredByWordId({ wordId: word.wordId });
   };
 
   return (
@@ -149,7 +153,7 @@ export function WordCard({ word, index }: WordCardProps) {
               <div className="space-y-3">
                 <button
                   onClick={handleMarkAsMastered}
-                  disabled={isMastered || isPending}
+                  disabled={isMastered || isUpdatePending || isMarkPending}
                   className={`
                     w-full py-2 px-4 rounded-xl font-semibold text-sm transition-all
                     ${isMastered
@@ -158,7 +162,7 @@ export function WordCard({ word, index }: WordCardProps) {
                     }
                   `}
                 >
-                  {isPending ? "Updating..." : isMastered ? "✓ Mastered" : "Mark as Mastered"}
+                  {isUpdatePending || isMarkPending ? "Updating..." : isMastered ? "✓ Mastered" : "Mark as Mastered"}
                 </button>
 
                 {/* Add to vocab lists */}

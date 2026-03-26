@@ -278,6 +278,26 @@ export async function registerRoutes(
     }
   });
 
+  // Mark word as mastered by `wordId` (creates the progress row if missing).
+  // This is important for vocab-list mode, where list words may not include `userWordId`.
+  app.patch("/api/word-progress/mark-mastered/:wordId", async (req, res) => {
+    try {
+      const userId = getAuthenticatedUserId(req, res);
+      if (!userId) return;
+
+      const wordId = Number(req.params.wordId);
+      if (!wordId || Number.isNaN(wordId)) {
+        return res.status(400).json({ message: "Invalid wordId" });
+      }
+
+      const updated = await storage.markWordAsMastered(wordId, userId);
+      res.json(updated);
+    } catch (error) {
+      console.error("Error marking word as mastered:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.get(api.readingPassages.list.path, async (req, res) => {
     const passages = await storage.getReadingPassages();
     res.json(passages);

@@ -2,8 +2,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
 import { getCachedMeUserId } from "@/hooks/use-me";
 
-console.log("use-word-progress hook loaded, api.wordProgress.update.path:", api.wordProgress.update.path);
-
 interface UpdateWordProgressRequest {
   userWordId: number;
 }
@@ -14,7 +12,6 @@ export function useUpdateWordProgress() {
   return useMutation({
     mutationFn: async ({ userWordId }: UpdateWordProgressRequest) => {
       const url = buildUrl(api.wordProgress.update.path, { userWordId });
-      console.log("Making PATCH request to:", url);
       const res = await fetch(url, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -22,26 +19,64 @@ export function useUpdateWordProgress() {
         body: JSON.stringify({}),
       });
 
-      console.log("Response status:", res.status);
       if (!res.ok) {
         const errorText = await res.text();
-        console.error("Error response:", errorText);
+        console.error("Word progress update failed:", errorText);
         throw new Error("Failed to update word progress");
       }
 
       return await res.json();
     },
     onSuccess: (data) => {
-      console.log("Mutation success, invalidating query");
       const uid = getCachedMeUserId(queryClient);
       if (uid != null) {
         void queryClient.invalidateQueries({
           queryKey: [api.words.list.path, uid],
         });
+
+        // In vocab-list mode, the UI reads from /api/vocab-lists/:listId/words,
+        // so invalidate all vocab-list word queries for this user.
+        void queryClient.invalidateQueries({
+          queryKey: [api.vocabLists.words.list.path],
+        });
       }
     },
     onError: (error) => {
       console.error("Mutation error:", error);
+    },
+  });
+}
+
+export function useMarkWordAsMasteredByWordId() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ wordId }: { wordId: number }) => {
+      const res = await fetch(`/api/word-progress/mark-mastered/${wordId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({}),
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("Mark-as-mastered failed:", errorText);
+        throw new Error("Failed to mark word as mastered");
+      }
+
+      return await res.json();
+    },
+    onSuccess: () => {
+      const uid = getCachedMeUserId(queryClient);
+      if (uid != null) {
+        void queryClient.invalidateQueries({
+          queryKey: [api.words.list.path, uid],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: [api.vocabLists.words.list.path],
+        });
+      }
     },
   });
 }
