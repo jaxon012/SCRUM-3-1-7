@@ -3,15 +3,17 @@ import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRightIcon,
-  FlameIcon,
-  TrophyIcon,
   CalendarIcon,
   StarIcon,
 } from "@/components/icons";
 import { useWords } from "@/hooks/use-words";
-import { AudioPlayer } from "@/components/AudioPlayer";
 import { useMemo } from "react";
 import { useMe } from "@/hooks/use-me";
+import {
+  FeaturedWordCard,
+  StreakCard,
+  type FeaturedWord,
+} from "@/components/HomeProgressCards";
 
 export default function Home() {
   const { data: me } = useMe();
@@ -32,10 +34,16 @@ export default function Home() {
     if (!Array.isArray(words) || words.length === 0) return null;
     // Prefer a "new" word for the day; fall back to the first word.
     return (
-      (words as any[]).find((w) => w?.userWordProgress?.status === "new") ??
-      (words as any[])[0]
+      (words as FeaturedWord[]).find((w) => w?.userWordProgress?.status === "new") ??
+      (words as FeaturedWord[])[0]
     );
   }, [words]);
+
+  const handlePracticeWord = () => {
+    if (!featuredWord?.term) return;
+    localStorage.setItem("lingoquest_featured_word", featuredWord.term);
+    navigate("/vocab");
+  };
 
   return (
     <Layout>
@@ -119,99 +127,27 @@ export default function Home() {
               </div>
             </Link>
           </section>
+
+          {/* Mobile Progress + Featured Word */}
+          <section className="mt-6 space-y-4 md:hidden">
+            <StreakCard streakCount={streakCount} streakPct={streakPct} />
+            <FeaturedWordCard
+              featuredWord={featuredWord}
+              onPracticeWord={handlePracticeWord}
+              hidePracticeLabelOnLg={false}
+            />
+          </section>
         </div>
 
         {/* Right (30%) */}
         <div className="hidden md:block md:col-span-3 pt-[2.75rem]">
           <section className="md:sticky md:top-[110px] self-start space-y-4">
-            {/* Streak Card */}
-            <div className="bg-gradient-to-br from-primary to-accent rounded-3xl p-6 text-white shadow-lg shadow-primary/25 relative overflow-hidden">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <p className="text-white/80 text-base font-medium mb-1">Weekly Streak</p>
-                  <h2 className="text-4xl leading-none font-display font-bold">
-                    {streakCount}/7 Days
-                  </h2>
-                </div>
-                <div className="bg-white/20 p-3 rounded-2xl">
-                  <FlameIcon className="w-8 h-8 text-orange-300 fill-orange-300" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs font-medium text-white/70">
-                  <span>Keep going!</span>
-                  <span>{streakPct}%</span>
-                </div>
-                <div className="h-3 bg-black/20 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-white rounded-full"
-                    style={{ width: `${streakPct}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Featured Word */}
-            <div className="rounded-3xl p-6 border border-border/50 shadow-sm bg-gradient-to-br from-[#C97B4B]/15 via-[#B8A832]/10 to-secondary/30">
-              <div className="flex items-center justify-between mb-3 gap-3">
-                <span className="inline-flex items-center rounded-full bg-background/60 border border-border/60 px-3 py-1 text-xs font-bold text-foreground">
-                  NEW TODAY
-                </span>
-                <span className="text-xs text-muted-foreground hidden lg:block">Practice with voice</span>
-              </div>
-
-              <h3 className="text-2xl font-bold text-foreground mb-2">
-                {featuredWord?.term ?? "—"}
-              </h3>
-
-              <div className="flex items-center gap-3 mb-5">
-                <span className="text-sm text-muted-foreground italic">
-                  {featuredWord?.phonetic ?? ""}
-                </span>
-                {featuredWord?.term && (
-                  <AudioPlayer text={featuredWord.term} className="p-1 w-9 h-9" />
-                )}
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
-                    Meaning
-                  </p>
-                  <p className="text-sm text-foreground/90">
-                    {featuredWord?.definition ?? "Pick a new word and practice it today."}
-                  </p>
-                </div>
-
-                <div className="bg-background/50 rounded-2xl border border-border/40 p-4">
-                  <p className="text-sm italic text-muted-foreground">
-                    {"\""}
-                    {featuredWord?.term
-                      ? `${featuredWord.term.charAt(0).toUpperCase()}${featuredWord.term.slice(
-                          1
-                        )}`
-                      : "This word"}
-                    {"\""} is today’s featured word. Try saying it out loud and using it in a quick sentence you’d actually say.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  disabled={!featuredWord?.term}
-                  onClick={() => {
-                    if (!featuredWord?.term) return;
-                    localStorage.setItem(
-                      "lingoquest_featured_word",
-                      featuredWord.term
-                    );
-                    navigate("/vocab");
-                  }}
-                  className="w-full mt-2 py-3 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Practice this word
-                </button>
-              </div>
-            </div>
+            <StreakCard streakCount={streakCount} streakPct={streakPct} />
+            <FeaturedWordCard
+              featuredWord={featuredWord}
+              onPracticeWord={handlePracticeWord}
+              hidePracticeLabelOnLg={true}
+            />
           </section>
         </div>
       </div>
