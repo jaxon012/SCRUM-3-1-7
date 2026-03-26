@@ -32,48 +32,83 @@ export function TextToSpeechWidget() {
   const [isActive, setIsActive] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const keepAliveRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const supported = typeof window !== "undefined" && "speechSynthesis" in window;
+
+  // Chrome macOS bug: speech synthesis silently stalls after ~15s without this
+  const startKeepAlive = useCallback(() => {
+    if (keepAliveRef.current) clearInterval(keepAliveRef.current);
+    keepAliveRef.current = setInterval(() => {
+      if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
+        window.speechSynthesis.pause();
+        window.speechSynthesis.resume();
+      }
+    }, 10000);
+  }, []);
+
+  const stopKeepAlive = useCallback(() => {
+    if (keepAliveRef.current) {
+      clearInterval(keepAliveRef.current);
+      keepAliveRef.current = null;
+    }
+  }, []);
 
   const speak = useCallback((text: string) => {
     if (!text.trim() || !supported) return;
     window.speechSynthesis.cancel();
+
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 0.9;
-    utterance.onstart = () => {
-      setIsSpeaking(true);
-      setIsPaused(false);
-    };
+
+    // Set speaking immediately — Chrome's onstart fires unreliably
+    setIsSpeaking(true);
+    setIsPaused(false);
+
     utterance.onend = () => {
       setIsSpeaking(false);
       setIsPaused(false);
+      stopKeepAlive();
     };
     utterance.onerror = () => {
       setIsSpeaking(false);
       setIsPaused(false);
+      stopKeepAlive();
     };
-    utteranceRef.current = utterance;
+
     window.speechSynthesis.speak(utterance);
-  }, [supported]);
+    startKeepAlive();
+  }, [supported, startKeepAlive, stopKeepAlive]);
 
   const handleSelectionEnd = useCallback(() => {
     if (!isActive) return;
-    setTimeout(() => {
-      const selected = window.getSelection()?.toString().trim();
-      if (selected) speak(selected);
-    }, 100);
+    // Capture selection text NOW — on mobile it may clear before setTimeout fires
+    const selected = window.getSelection()?.toString().trim() ?? "";
+    if (!selected) return;
+    setTimeout(() => speak(selected), 80);
   }, [isActive, speak]);
+
+  // Suppress clicks that follow a drag-to-select so buttons don't activate
+  // when the user is just trying to highlight their label text
+  const handleCapturingClick = useCallback((e: Event) => {
+    const selected = window.getSelection()?.toString().trim() ?? "";
+    if (selected) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, []);
 
   useEffect(() => {
     if (isActive) {
       document.addEventListener("mouseup", handleSelectionEnd);
       document.addEventListener("touchend", handleSelectionEnd);
+      document.addEventListener("click", handleCapturingClick, true);
     }
     return () => {
       document.removeEventListener("mouseup", handleSelectionEnd);
       document.removeEventListener("touchend", handleSelectionEnd);
+      document.removeEventListener("click", handleCapturingClick, true);
     };
-  }, [isActive, handleSelectionEnd]);
+  }, [isActive, handleSelectionEnd, handleCapturingClick]);
 
   useEffect(() => {
     if (isActive) {
@@ -81,22 +116,22 @@ export function TextToSpeechWidget() {
     } else {
       document.body.classList.remove("tts-reading-mode");
     }
-    return () => {
-      document.body.classList.remove("tts-reading-mode");
-    };
+    return () => document.body.classList.remove("tts-reading-mode");
   }, [isActive]);
 
   useEffect(() => {
     return () => {
       if (supported) window.speechSynthesis.cancel();
+      stopKeepAlive();
     };
-  }, [supported]);
+  }, [supported, stopKeepAlive]);
 
   const toggleActive = () => {
     if (isActive) {
-      if (supported) window.speechSynthesis.cancel();
+      window.speechSynthesis.cancel();
       setIsSpeaking(false);
       setIsPaused(false);
+      stopKeepAlive();
     }
     setIsActive((prev) => !prev);
   };
@@ -115,9 +150,10 @@ export function TextToSpeechWidget() {
 
   const handleStop = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (supported) window.speechSynthesis.cancel();
+    window.speechSynthesis.cancel();
     setIsSpeaking(false);
     setIsPaused(false);
+    stopKeepAlive();
     setIsActive(false);
   };
 
@@ -126,6 +162,7 @@ export function TextToSpeechWidget() {
   return (
     <div className="fixed bottom-24 right-4 md:bottom-8 md:right-6 z-[60] flex flex-col items-end gap-2 select-none">
 
+      {/* Pause / Stop — visible whenever speaking */}
       {isSpeaking && (
         <div className="flex gap-2 animate-fade-in">
           <button
@@ -149,6 +186,7 @@ export function TextToSpeechWidget() {
         </div>
       )}
 
+      {/* Hint shown while active but not yet speaking */}
       {isActive && !isSpeaking && (
         <div className="tts-hint animate-fade-in">
           Tap &amp; drag to read text aloud

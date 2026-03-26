@@ -134,6 +134,17 @@ body.tts-reading-mode * {
   cursor: text !important;
 }
 
+/* Allow text selection on links and buttons in TTS mode.
+   Browsers set user-select:none on buttons and prevent drag-selection
+   on anchors by default — override so users can highlight any label. */
+body.tts-reading-mode a,
+body.tts-reading-mode button,
+body.tts-reading-mode [role="button"] {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  -webkit-user-drag: none !important;
+}
+
 /* Main floating button — base */
 .tts-main-btn {
   width: 56px;
