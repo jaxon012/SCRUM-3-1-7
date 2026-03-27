@@ -101,18 +101,19 @@ export class DatabaseStorage implements IStorage {
   async getWords(
     userId: number = 1
   ): Promise<(Word & { userWordProgress?: UserWordProgress })[]> {
-    const words = await db.select().from(word);
-
-    const progressRecords = await db
-      .select()
+    const rows = await db
+      .select({
+        word: word,
+        progress: userWordProgress,
+      })
       .from(userWordProgress)
-      .where(eq(userWordProgress.userId, userId));
+      .innerJoin(word, eq(userWordProgress.wordId, word.wordId))
+      .where(eq(userWordProgress.userId, userId))
+      .orderBy(asc(word.wordId));
 
-    const progressMap = new Map(progressRecords.map((p) => [p.wordId, p]));
-
-    return words.map((w) => ({
-      ...w,
-      userWordProgress: progressMap.get(w.wordId),
+    return rows.map(({ word: wordRow, progress }) => ({
+      ...wordRow,
+      userWordProgress: progress,
     }));
   }
 
