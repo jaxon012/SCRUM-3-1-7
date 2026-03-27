@@ -1,23 +1,62 @@
 import { Layout } from "@/components/Layout";
-import { useGameSession, useGenerateSceneImage } from "@/hooks/use-adventure";
-import { useVoiceRecorder, useVoiceStream } from "@/replit_integrations/audio";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, Square, Loader2, Send, X } from "lucide-react";
+import { Loader2, Send, X, RotateCcw } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import { useWords } from "@/hooks/use-words";
-import { useVocabLists, useCreateVocabList, useAddWordToVocabList } from "@/hooks/use-vocab-lists";
+import { useWords, useWordLookup } from "@/hooks/use-words";
+import {
+  useVocabLists,
+  useCreateVocabList,
+  useAddWordToVocabList,
+} from "@/hooks/use-vocab-lists";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { CreateVocabListDialog } from "@/components/CreateVocabListDialog";
 
+const MAX_TURNS = 5;
+
+const DEFAULT_ADVENTURE_SCENE_IMAGE = "/adventure-hero.png";
+
+/** Turn the latest narrator text into a visual prompt for the image API. */
+function buildSceneImagePrompt(storyBeat: string): string {
+  const excerpt = storyBeat.replace(/\s+/g, " ").trim().slice(0, 900);
+  return (
+    "Fantasy adventure scene, painterly illustration, cinematic lighting, rich color, " +
+    "no text or letters in the image. Show this moment: " +
+    excerpt
+  );
+}
+
+async function requestSceneImage(
+  prompt: string
+): Promise<{ url: string | null; error?: string }> {
+  const res = await fetch("/api/generate-image", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ prompt, size: "512x512" }),
+  });
+  if (!res.ok) {
+    let message = `Image request failed (${res.status})`;
+    try {
+      const body = (await res.json()) as { error?: string };
+      if (body?.error) message = body.error;
+    } catch {
+      /* not JSON */
+    }
+    console.warn("generate-image failed:", res.status, message);
+    return { url: null, error: message };
+  }
+  const data = (await res.json()) as { url?: string | null; b64_json?: string | null };
+  if (data.url) return { url: data.url };
+  if (data.b64_json) return { url: `data:image/png;base64,${data.b64_json}` };
+  return { url: null, error: "No image data in response" };
+}
+
 interface Message {
-  role: 'system' | 'user' | 'assistant';
+  role: "system" | "user" | "assistant";
   content: string;
 }
 
 export default function Adventure() {
-  const { sessionId, createSession, isCreating } = useGameSession();
-  const { mutate: generateImage, isPending: isGeneratingImage } = useGenerateSceneImage();
-  const [sceneImage, setSceneImage] = useState<string | null>(null);
   const { data: vocabWords } = useWords();
   const { data: lists } = useVocabLists();
   const createList = useCreateVocabList();
@@ -25,236 +64,299 @@ export default function Adventure() {
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [selectedListId, setSelectedListId] = useState<number | "">("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  
-  // Game state
+
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: "You find yourself at the edge of a mysterious forest. The trees whisper in a language you don't understand. A path splits in two: one leads towards a glowing cave (Cave), and the other towards a mountain peak (Mountain). What do you do?" }
+    {
+      role: "assistant",
+      content:
+        "Welcome, brave adventurer! You stand at the gates of an ancient castle, its towering walls covered in ivy and mystery. A faint glow shines from within, and you hear distant echoes of a forgotten language. Do you enter through the main gate, or search for a hidden passage along the castle walls?",
+    },
   ]);
   const [textInput, setTextInput] = useState("");
-  
-  // Audio hooks
-  const recorder = useVoiceRecorder();
-  const stream = useVoiceStream({
-    onUserTranscript: (text) => {
-      addMessage('user', text);
-    },
-    onTranscript: (text, full) => {
-      // Update the last assistant message with streaming text
-      setMessages(prev => {
-        const last = prev[prev.length - 1];
-        if (last.role === 'assistant') {
-          return [...prev.slice(0, -1), { ...last, content: full }];
-        }
-        return [...prev, { role: 'assistant', content: full }];
-      });
-    },
-    onComplete: (fullText) => {
-      // Generate new image based on the response
-      generateImage(fullText, {
-        onSuccess: (data) => setSceneImage(data.url)
-      });
-    }
-  });
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [turnCount, setTurnCount] = useState(0);
+  const [isComplete, setIsComplete] = useState(false);
+  const [sceneImageUrl, setSceneImageUrl] = useState(DEFAULT_ADVENTURE_SCENE_IMAGE);
+  const [sceneImageLoading, setSceneImageLoading] = useState(false);
+  const [sceneImageError, setSceneImageError] = useState<string | null>(null);
+  const [adventureError, setAdventureError] = useState<string | null>(null);
+  const sceneImageRequestId = useRef(0);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Auto-start session on mount
-  useEffect(() => {
-    if (!sessionId && !isCreating) {
-      createSession.mutate();
-    }
-  }, []);
-
-  // Auto-scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
-  const addMessage = (role: 'user' | 'assistant', content: string) => {
-    setMessages(prev => [...prev, { role, content }]);
-  };
-
-  const handleVoiceInput = async () => {
-    if (!sessionId) return;
-    
-    if (recorder.state === "recording") {
-      const blob = await recorder.stopRecording();
-      // Optimistic UI update handled by stream callbacks
-      await stream.streamVoiceResponse(`/api/conversations/${sessionId}/messages`, blob);
-    } else {
-      await recorder.startRecording();
-    }
-  };
-
   const handleTextInput = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!textInput.trim() || !sessionId) return;
+    if (!textInput.trim() || isStreaming || isComplete) return;
 
+    setAdventureError(null);
+    setSceneImageError(null);
     const content = textInput;
+    const prevMessages = messages;
+    const prevTurn = turnCount;
+    const newTurnNumber = turnCount + 1;
+    const updatedMessages = [...messages, { role: "user" as const, content }];
     setTextInput("");
-    addMessage('user', content);
+    setMessages(updatedMessages);
+    setTurnCount(newTurnNumber);
+    setIsStreaming(true);
 
-    // Send text message (backend handles TTS response if needed, but for now we'll assume text-only response for text input)
-    // For this prototype, we'll mimic the voice flow but via a text endpoint if available.
-    // Since we only set up voice routes in the example, we'll simulate a fetch to the chat endpoint
-    
+    let assistantMessage = "";
     try {
-      const res = await fetch(`/api/conversations/${sessionId}/messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content })
+      const res = await fetch("/api/adventure/message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ messages: updatedMessages, turnNumber: newTurnNumber }),
       });
-      
-      // Handle streaming text response manually since useVoiceStream is for audio
+
+      if (!res.ok) {
+        let errMsg = `Adventure request failed (${res.status})`;
+        try {
+          const body = (await res.json()) as { error?: string };
+          if (body?.error) errMsg = body.error;
+        } catch {
+          /* not JSON */
+        }
+        console.error("Adventure API error:", res.status, errMsg);
+        setAdventureError(errMsg);
+        setMessages(prevMessages);
+        setTurnCount(prevTurn);
+        setTextInput(content);
+        return;
+      }
+
       const reader = res.body?.getReader();
+      if (!reader) {
+        setAdventureError("Adventure response had no body to read.");
+        setMessages(prevMessages);
+        setTurnCount(prevTurn);
+        setTextInput(content);
+        return;
+      }
+
       const decoder = new TextDecoder();
-      let assistantMessage = "";
-      
-      // Add empty assistant message to fill
-      addMessage('assistant', "");
-      
+      let buffer = "";
+
+      setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+
       while (true) {
-        const { done, value } = await reader!.read();
+        const { done, value } = await reader.read();
         if (done) break;
-        
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-        
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
+          if (line.startsWith("data: ")) {
             try {
               const data = JSON.parse(line.slice(6));
-              if (data.content) {
+              if (data.type === "content" && data.content) {
                 assistantMessage += data.content;
-                setMessages(prev => {
-                   const newMsgs = [...prev];
-                   newMsgs[newMsgs.length - 1].content = assistantMessage;
-                   return newMsgs;
+                setMessages((prev) => {
+                  const newMsgs = [...prev];
+                  newMsgs[newMsgs.length - 1] = { role: "assistant", content: assistantMessage };
+                  return newMsgs;
                 });
+              } else if (data.type === "done") {
+                if (data.isComplete) {
+                  setIsComplete(true);
+                }
               }
-            } catch (e) {}
+            } catch {
+              // Partial JSON, completed in next chunk
+            }
           }
         }
       }
-      
-      // Generate image after text complete
-      generateImage(assistantMessage, {
-        onSuccess: (data) => setSceneImage(data.url)
-      });
-      
     } catch (err) {
       console.error(err);
+      setAdventureError("Could not reach the adventure server. Try again.");
+      setMessages(prevMessages);
+      setTurnCount(prevTurn);
+      setTextInput(content);
+    } finally {
+      setIsStreaming(false);
     }
+
+    if (assistantMessage.trim()) {
+      const reqId = ++sceneImageRequestId.current;
+      setSceneImageLoading(true);
+      try {
+        const prompt = buildSceneImagePrompt(assistantMessage);
+        const { url, error: imgErr } = await requestSceneImage(prompt);
+        if (reqId === sceneImageRequestId.current) {
+          if (imgErr) setSceneImageError(imgErr);
+          else if (url) {
+            setSceneImageError(null);
+            setSceneImageUrl(url);
+          }
+        }
+      } catch (e) {
+        console.error("Scene image error:", e);
+      } finally {
+        if (reqId === sceneImageRequestId.current) {
+          setSceneImageLoading(false);
+        }
+      }
+    }
+  };
+
+  const handleNewAdventure = () => {
+    setMessages([
+      {
+        role: "assistant",
+        content:
+          "Welcome, brave adventurer! You stand at the gates of an ancient castle, its towering walls covered in ivy and mystery. A faint glow shines from within, and you hear distant echoes of a forgotten language. Do you enter through the main gate, or search for a hidden passage along the castle walls?",
+      },
+    ]);
+    setTurnCount(0);
+    setIsComplete(false);
+    setTextInput("");
+    sceneImageRequestId.current += 1;
+    setSceneImageUrl(DEFAULT_ADVENTURE_SCENE_IMAGE);
+    setSceneImageLoading(false);
+    setAdventureError(null);
+    setSceneImageError(null);
   };
 
   return (
     <Layout title="Adventure Mode" showBack>
-      <div className="h-[calc(100vh-180px)] flex flex-col gap-4">
-        
-        {/* Dynamic Scene Image */}
-        <div className="relative aspect-video rounded-3xl overflow-hidden shadow-lg border border-border bg-black/10 shrink-0">
-          <AnimatePresence mode="wait">
-            <motion.img
-              key={sceneImage || "placeholder"}
-              initial={{ opacity: 0, scale: 1.1 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.5 }}
-              src={sceneImage || "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&q=80"} // Forest placeholder
-              alt="Current scene"
-              className="w-full h-full object-cover"
-            />
-          </AnimatePresence>
-          
-          {isGeneratingImage && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm">
-              <Loader2 className="w-8 h-8 text-white animate-spin" />
+      <div className="h-[calc(100vh-180px)] flex flex-col gap-3 min-h-0">
+        {adventureError && (
+          <div
+            role="alert"
+            className="rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
+            {adventureError}
+          </div>
+        )}
+        {/* Desktop: image left + story right; mobile: stacked */}
+        <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 items-stretch">
+          {/* Left: scene image (square, centered in column) */}
+          <div className="flex flex-col justify-center items-center gap-2 min-h-0 py-1 md:py-0">
+            <div className="relative w-full max-w-[min(100%,340px)] sm:max-w-[380px] md:max-w-[400px] aspect-square rounded-2xl overflow-hidden shadow-md border border-border bg-muted/40">
+              <img
+                src={sceneImageUrl}
+                alt="Current scene"
+                className="absolute inset-0 w-full h-full object-contain object-center p-1 transition-opacity duration-300"
+              />
+              {sceneImageLoading && (
+                <div
+                  className="absolute inset-0 flex items-center justify-center bg-background/60 backdrop-blur-[2px] z-10"
+                  aria-busy
+                  aria-label="Generating scene image"
+                >
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              )}
+              <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full text-[11px] font-medium text-white border border-white/10 z-20">
+                Turn {turnCount}/{MAX_TURNS} {isComplete ? "— Story Complete" : ""}
+              </div>
             </div>
-          )}
-          
-          <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-medium text-white border border-white/10">
-            Scene: The Mysterious Forest
+            {sceneImageError && (
+              <p
+                role="status"
+                className="text-xs text-muted-foreground text-center max-w-[min(100%,400px)] px-2 leading-snug"
+              >
+                {sceneImageError}
+              </p>
+            )}
+          </div>
+
+          {/* Right: AI conversation */}
+          <div className="flex flex-col h-full min-h-[200px] md:min-h-0">
+            <div
+              className="flex-1 overflow-y-auto rounded-2xl border border-border bg-card shadow-sm p-4 space-y-4 min-h-0"
+              ref={scrollRef}
+            >
+              {messages.map((msg, idx) => (
+                <div
+                  key={idx}
+                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                >
+                  <div
+                    className={`
+                  max-w-[85%] rounded-2xl p-3 text-sm leading-relaxed
+                  ${msg.role === "user"
+                    ? "bg-primary text-primary-foreground rounded-tr-none"
+                    : "bg-secondary/40 border border-border/50 text-foreground rounded-tl-none"}
+                `}
+                  >
+                    {msg.role === "assistant"
+                      ? msg.content.split(" ").map((word, i) => {
+                          const clean = word.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, "");
+                          return (
+                            <span
+                              key={i}
+                              onClick={() => setSelectedWord(clean)}
+                              className="cursor-pointer hover:bg-primary/20 hover:text-primary rounded px-0.5 transition-colors duration-200"
+                            >
+                              {word}{" "}
+                            </span>
+                          );
+                        })
+                      : msg.content}
+                  </div>
+                </div>
+              ))}
+              {isStreaming && messages[messages.length - 1]?.content === "" && (
+                <div className="flex justify-start">
+                  <div className="bg-secondary/40 border border-border/50 rounded-2xl rounded-tl-none p-3">
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                  </div>
+                </div>
+              )}
+              <div className="h-2" />
+            </div>
           </div>
         </div>
 
-        {/* Chat Area */}
-        <div className="flex-1 overflow-y-auto space-y-4 px-1" ref={scrollRef}>
-          {messages.map((msg, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-              <div 
-                className={`
-                  max-w-[85%] rounded-2xl p-4 text-sm leading-relaxed shadow-sm
-                  ${msg.role === 'user' 
-                    ? 'bg-primary text-primary-foreground rounded-tr-none' 
-                    : 'bg-card border border-border/50 text-foreground rounded-tl-none'}
-                `}
-              >
-                {msg.role === 'assistant'
-                  ? msg.content.split(" ").map((word, i) => {
-                      const clean = word.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, "");
-                      return (
-                        <span
-                          key={i}
-                          onClick={() => setSelectedWord(clean)}
-                          className="cursor-pointer hover:bg-primary/20 hover:text-primary rounded px-0.5 transition-colors duration-200"
-                        >
-                          {word}{" "}
-                        </span>
-                      );
-                    })
-                  : msg.content}
-              </div>
-            </motion.div>
-          ))}
-          {/* Invisible padding for bottom scroll */}
-          <div className="h-4" /> 
-        </div>
-
-        {/* Controls Area */}
-        <div className="bg-card border border-border rounded-3xl p-2 shadow-lg flex items-center gap-2">
-          {/* Text Input */}
-          <form onSubmit={handleTextInput} className="flex-1 flex items-center bg-secondary/30 rounded-2xl px-3 border border-transparent focus-within:border-primary/30 transition-colors">
-            <input 
-              type="text" 
+        {/* Input Area — full width below both columns */}
+        {isComplete ? (
+          <div className="shrink-0 bg-card border border-border rounded-2xl p-3 shadow-sm flex items-center justify-center">
+            <button
+              onClick={handleNewAdventure}
+              className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold text-sm hover:bg-primary/90 transition-colors"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Start New Adventure
+            </button>
+          </div>
+        ) : (
+          <form
+            onSubmit={handleTextInput}
+            className="shrink-0 bg-card border border-border rounded-2xl p-2 shadow-sm flex items-center gap-2"
+          >
+            <input
+              type="text"
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
               placeholder="What do you do?"
-              className="flex-1 bg-transparent py-3 outline-none text-sm placeholder:text-muted-foreground"
+              disabled={isStreaming}
+              className="flex-1 bg-secondary/30 rounded-xl px-3 py-2.5 outline-none text-sm placeholder:text-muted-foreground disabled:opacity-50 border border-transparent focus:border-primary/30 transition-colors"
             />
-            {textInput && (
-              <button type="submit" className="text-primary hover:text-primary/80 transition-colors">
-                <Send className="w-5 h-5" />
-              </button>
-            )}
+            <button
+              type="submit"
+              disabled={!textInput.trim() || isStreaming}
+              className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-40 hover:bg-primary/90 transition-colors shrink-0"
+            >
+              {isStreaming ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+            </button>
           </form>
-
-          {/* Voice Input Button */}
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={handleVoiceInput}
-            className={`
-              w-12 h-12 rounded-2xl flex items-center justify-center shadow-md transition-all
-              ${recorder.state === "recording" 
-                ? 'bg-red-500 text-white shadow-red-500/30' 
-                : 'bg-primary text-white shadow-primary/30 hover:bg-primary/90'}
-            `}
-          >
-            {recorder.state === "recording" ? (
-              <Square className="w-5 h-5 fill-current" />
-            ) : (
-              <Mic className="w-6 h-6" />
-            )}
-          </motion.button>
-        </div>
+        )}
       </div>
-      {/* Word popup reused from Read-style behavior */}
+      {/* Word popup */}
       <AdventureWordModal
         selectedWord={selectedWord}
         onClose={() => setSelectedWord(null)}
@@ -273,7 +375,7 @@ export default function Adventure() {
           if (!selectedWord) return;
           const clean = selectedWord.toLowerCase();
           const matchingWord = (vocabWords as any[] | undefined)?.find(
-            (w) => w.term.toLowerCase() === clean
+            (w) => w.term.toLowerCase() === clean,
           );
           const created = await createList.mutateAsync(name);
           setSelectedListId(created.vocabListId);
@@ -306,16 +408,20 @@ function AdventureWordModal({
   onClose,
   vocabWords,
   lists,
-  createList,
   addWordToList,
   selectedListId,
   setSelectedListId,
   onOpenCreateDialog,
 }: AdventureWordModalProps) {
-  if (!selectedWord) return null;
+  const { data: lookedUpWord, isLoading: isLookingUp } = useWordLookup(selectedWord);
 
-  const clean = selectedWord.toLowerCase();
-  const matchingWord = vocabWords?.find((w) => w.term.toLowerCase() === clean) || null;
+  const clean = selectedWord?.toLowerCase() ?? "";
+  const matchingWord =
+    lookedUpWord ||
+    vocabWords?.find((w) => w.term.toLowerCase() === clean) ||
+    null;
+
+  if (!selectedWord) return null;
 
   return (
     <AnimatePresence>
@@ -344,9 +450,14 @@ function AdventureWordModal({
 
               <div className="flex items-start gap-4 mb-4">
                 <div className="flex-1">
-                  <h3 className="text-2xl font-bold font-display capitalize mb-1">{selectedWord}</h3>
+                  <h3 className="text-2xl font-bold font-display capitalize mb-1">
+                    {selectedWord}
+                  </h3>
                 </div>
-                <AudioPlayer text={selectedWord} className="bg-primary/10 text-primary w-12 h-12" />
+                <AudioPlayer
+                  text={selectedWord}
+                  className="bg-primary/10 text-primary w-12 h-12"
+                />
               </div>
 
               <div className="space-y-4">
@@ -354,8 +465,27 @@ function AdventureWordModal({
                   <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
                     Definition
                   </h4>
-                  <p className="text-foreground/90">
-                    In a full version, this definition would come from the main vocab data.
+                  {isLookingUp ? (
+                    <div className="space-y-2 animate-pulse">
+                      <div className="h-4 bg-secondary rounded w-full" />
+                      <div className="h-4 bg-secondary rounded w-3/4" />
+                    </div>
+                  ) : (
+                    <p className="text-foreground/90">
+                      {matchingWord?.definition ?? "No definition found for this word."}
+                    </p>
+                  )}
+                  {matchingWord?.phonetic && !isLookingUp && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {matchingWord.phonetic}
+                    </p>
+                  )}
+                </div>
+                <div className="bg-secondary/50 p-3 rounded-xl">
+                  <p className="text-sm italic text-muted-foreground">
+                    "Try using{" "}
+                    <span className="text-primary font-medium">{selectedWord}</span> in
+                    a sentence you'd say today."
                   </p>
                 </div>
               </div>
@@ -367,10 +497,14 @@ function AdventureWordModal({
                 <div className="space-y-2">
                   <select
                     value={selectedListId}
-                    onChange={(e) => setSelectedListId(e.target.value ? Number(e.target.value) : "")}
+                    onChange={(e) =>
+                      setSelectedListId(
+                        e.target.value ? Number(e.target.value) : "",
+                      )
+                    }
                     className="w-full px-3 py-2 rounded-xl bg-secondary/50 border border-border/60 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
                   >
-                    <option value="">Choose a list…</option>
+                    <option value="">Choose a list...</option>
                     {lists?.map((list) => (
                       <option key={list.vocabListId} value={list.vocabListId}>
                         {list.name}
@@ -419,4 +553,3 @@ function AdventureWordModal({
     </AnimatePresence>
   );
 }
-

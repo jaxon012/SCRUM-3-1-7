@@ -1,7 +1,11 @@
 import { Link, useLocation } from "wouter";
-import { HomeIcon, BookOpenIcon, MicIcon, Gamepad2Icon, ChevronLeftIcon, MenuIcon } from "./icons";
+import { Gamepad2 } from "lucide-react";
+import { HomeIcon, BookOpenIcon, MicIcon, ChevronLeftIcon, MenuIcon } from "./icons";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ME_QUERY_KEY } from "@/hooks/use-me";
+import { clearVocabSortPrefsFromStorage } from "@/lib/vocab-prefs-storage";
+import { TextToSpeechWidget } from "./TextToSpeechWidget";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,7 +15,7 @@ interface LayoutProps {
 }
 
 export function Layout({ children, title, showBack = false, backOnly = false }: LayoutProps) {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -19,7 +23,7 @@ export function Layout({ children, title, showBack = false, backOnly = false }: 
   const queryClient = useQueryClient();
 
   const { data: currentUser } = useQuery({
-    queryKey: ["me"],
+    queryKey: ME_QUERY_KEY,
     queryFn: () => fetch("/api/me", { credentials: "include" }).then(r => r.json()),
   });
 
@@ -34,7 +38,9 @@ export function Layout({ children, title, showBack = false, backOnly = false }: 
       return r.json();
     }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["me"] });
+      clearVocabSortPrefsFromStorage();
+      queryClient.clear();
+      void queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY });
       setUsername("");
       setPassword("");
       setError("");
@@ -44,11 +50,22 @@ export function Layout({ children, title, showBack = false, backOnly = false }: 
 
   const logoutMutation = useMutation({
     mutationFn: () => fetch("/api/logout", { method: "POST", credentials: "include" }).then(r => r.json()),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["me"] }),
+    onSuccess: () => {
+      clearVocabSortPrefsFromStorage();
+      queryClient.clear();
+      void queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY });
+      navigate("/login", { replace: true });
+    },
   });
 
   return (
     <div className="min-h-screen bg-background flex flex-col w-full relative">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-foreground focus:text-background focus:font-semibold focus:text-sm"
+      >
+        Skip to main content
+      </a>
       {/* Header */}
       <header className="w-full px-6 py-4 flex flex-col gap-3 sticky top-0 z-50 bg-background border-b border-border/50 shadow-sm">
         <div className="max-w-[1200px] mx-auto w-full">
@@ -69,9 +86,12 @@ export function Layout({ children, title, showBack = false, backOnly = false }: 
                   </h1>
                 ) : (
                   <Link href="/" className="flex items-center gap-2">
-                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-xl">
-                      L
-                    </div>
+                    <img
+                      src="/dragon-face.png"
+                      alt="LingoQuest"
+                      className="w-10 h-10 rounded-lg object-cover border border-border/50"
+                      loading="eager"
+                    />
                     <div className="flex flex-col leading-tight">
                       <span className="font-display font-bold text-3xl md:text-4xl">LingoQuest</span>
                       <span className="text-sm text-muted-foreground">
@@ -161,14 +181,14 @@ export function Layout({ children, title, showBack = false, backOnly = false }: 
             <DesktopNavLink href="/" icon={HomeIcon} label="Home" active={location === "/"} />
             <DesktopNavLink href="/vocab" icon={BookOpenIcon} label="Vocab" active={location === "/vocab"} />
             <DesktopNavLink href="/read" icon={MicIcon} label="Read" active={location === "/read"} />
-            <DesktopNavLink href="/adventure" icon={Gamepad2Icon} label="Play" active={location === "/adventure"} />
+            <DesktopNavLink href="/adventure" icon={Gamepad2} label="Play" active={location === "/adventure"} />
           </div>
           )}
         </div>
       </header>
 
       {/* Main Content */}
-      <main className={`flex-1 w-full max-w-[1200px] mx-auto px-4 py-6 overflow-y-auto scrollbar-hide ${!backOnly ? "pb-24 md:pb-6" : ""}`}>
+      <main id="main-content" className={`flex-1 w-full max-w-[1200px] mx-auto px-4 py-6 overflow-y-auto scrollbar-hide ${!backOnly ? "pb-24 md:pb-6" : ""}`}>
         {children}
       </main>
 
@@ -178,10 +198,13 @@ export function Layout({ children, title, showBack = false, backOnly = false }: 
           <NavLink href="/" icon={HomeIcon} label="Home" active={location === "/"} />
           <NavLink href="/vocab" icon={BookOpenIcon} label="Vocab" active={location === "/vocab"} />
           <NavLink href="/read" icon={MicIcon} label="Read" active={location === "/read"} />
-          <NavLink href="/adventure" icon={Gamepad2Icon} label="Play" active={location === "/adventure"} />
+          <NavLink href="/adventure" icon={Gamepad2} label="Play" active={location === "/adventure"} />
         </div>
       </nav>
       )}
+
+      {/* Read-aloud helper — visible on all pages */}
+      <TextToSpeechWidget />
     </div>
   );
 }
@@ -218,14 +241,14 @@ function NavLink({ href, icon: Icon, label, active }: { href: string; icon: any;
         p-2.5 rounded-2xl transition-all duration-300 relative
         ${active ? 'text-primary bg-primary/10 scale-110 shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'}
       `}>
-        <Icon className={`w-6 h-6 ${active ? 'fill-current' : ''}`} strokeWidth={active ? 2.5 : 2} />
+        <Icon className="w-6 h-6" strokeWidth={active ? 2.5 : 2} />
         {active && (
           <div
             className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full"
           />
         )}
       </div>
-      <span className={`text-[10px] font-medium transition-colors ${active ? 'text-primary' : 'text-muted-foreground'}`}>
+      <span className={`text-[10px] font-bold transition-colors ${active ? 'text-foreground' : 'text-muted-foreground'}`}>
         {label}
       </span>
     </Link>

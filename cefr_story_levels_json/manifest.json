@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "readingSpeedWordsPerMinute": 130,
+  "format": "one file per CEFR level",
+  "levels": [
+    {
+      "level": "A1",
+      "description": "Beginner",
+      "file": "A1.json",
+      "storyCount": 10
+    },
+    {
+      "level": "A2",
+      "description": "Elementary",
+      "file": "A2.json",
+      "storyCount": 10
+    },
+    {
+      "level": "B1",
+      "description": "Intermediate",
+      "file": "B1.json",
+      "storyCount": 10
+    },
+    {
+      "level": "B2",
+      "description": "Upper Intermediate",
+      "file": "B2.json",
+      "storyCount": 10
+    },
+    {
+      "level": "C1",
+      "description": "Advanced",
+      "file": "C1.json",
+      "storyCount": 10
+    },
+    {
+      "level": "C2",
+      "description": "Proficient",
+      "file": "C2.json",
+      "storyCount": 10
+    }
+  ]
+}

@@ -1,3 +1,91 @@
+# Level Navigation — Cursor Implementation Guide
+
+## What we're building
+1. A **level dropdown** on the level badge — click it to see all 6 levels and jump to any one.
+2. When jumping to a level, land on the **last-read story in that level** (falls back to story 1 if never visited).
+3. The progress counter shows **X / 10** (stories within the current level only, not all 62).
+4. A **"Feeling ready for the next level?"** banner on the last story of each level, with a primary "Go to Level X+1" button and a secondary "← Back to Level X−1" button.
+
+No schema changes. One new server method + endpoint, then `Read.tsx` gets the new UI.
+
+---
+
+## Step 1 — Add `getLastReadPassageInLevel` to storage
+
+**File: `server/storage.ts`**
+
+### 1a — Add method to the `IStorage` interface
+
+```ts
+// Add to the IStorage interface:
+getLastReadPassageInLevel(userId: number, level: number): Promise<number | null>;
+```
+
+### 1b — Add method to the `DatabaseStorage` class
+
+Add this anywhere inside the class (e.g. after `upsertReadingProgress`):
+
+```ts
+async getLastReadPassageInLevel(userId: number, level: number): Promise<number | null> {
+  // Join userReadingProgress with passage to filter by readingLevel,
+  // then return the passageId the user visited most recently in that level.
+  const rows = await db
+    .select({
+      passageId: userReadingProgress.passageId,
+      completedAt: userReadingProgress.completedAt,
+    })
+    .from(userReadingProgress)
+    .innerJoin(passage, eq(userReadingProgress.passageId, passage.passageId))
+    .where(
+      and(
+        eq(userReadingProgress.userId, userId),
+        eq(passage.readingLevel, level)
+      )
+    )
+    .orderBy(desc(userReadingProgress.completedAt))
+    .limit(1);
+
+  return rows.length > 0 ? rows[0].passageId : null;
+}
+```
+
+Make sure `passage` is imported at the top of `storage.ts` (it already is in the existing imports).
+
+---
+
+## Step 2 — Add the level progress endpoint
+
+**File: `server/routes.ts`**
+
+Add this route inside `registerRoutes()`, alongside the other reading-progress routes:
+
+```ts
+// Returns the last-read passageId for a given level (for jump-to-level)
+app.get("/api/reading-progress/level/:level", async (req, res) => {
+  const userId = req.session.userId || 1;
+  const level = Number(req.params.level);
+  if (!level || isNaN(level)) {
+    return res.status(400).json({ message: "Invalid level" });
+  }
+  const passageId = await storage.getLastReadPassageInLevel(userId, level);
+  res.json({ passageId });
+});
+```
+
+---
+
+## Step 3 — Rewrite `Read.tsx`
+
+**File: `client/src/pages/Read.tsx`**
+
+Replace the entire file with the version below. Changes vs the previous version are:
+- Level badge replaced with a **tappable dropdown** showing all 6 levels.
+- Progress counter shows **within-level position** (e.g. "3 / 10") instead of global.
+- **"Feeling ready for the next level?"** banner renders on the last story of a level.
+- Dropdown jump calls `/api/reading-progress/level/:level` to resume last position.
+- The word-click popup and all vocab functionality are **100% unchanged**.
+
+```tsx
 import { Layout } from "@/components/Layout";
 import {
   useReadingPassages,
@@ -16,7 +104,6 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { useWords, useWordLookup } from "@/hooks/use-words";
 import {
@@ -26,6 +113,8 @@ import {
 } from "@/hooks/use-vocab-lists";
 import { CreateVocabListDialog } from "@/components/CreateVocabListDialog";
 import type { Passage } from "@shared/schema";
+
+// ─── Level helpers ──────────────────────────────────────────────────────────
 
 const LEVEL_LABELS: Record<number, string> = {
   1: "Level 1",
@@ -45,6 +134,8 @@ const LEVEL_DESCRIPTIONS: Record<number, string> = {
   6: "Proficient",
 };
 
+// ─── Clickable word ──────────────────────────────────────────────────────────
+
 function ClickableWord({
   word,
   onClick,
@@ -63,6 +154,8 @@ function ClickableWord({
   );
 }
 
+// ─── Main component ──────────────────────────────────────────────────────────
+
 export default function Read() {
   const { data: passages, isLoading } = useReadingPassages();
   const { data: savedPassageId } = useCurrentReadingProgress();
@@ -71,12 +164,14 @@ export default function Read() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [progressInitialized, setProgressInitialized] = useState(false);
 
+  // Level dropdown open/close
   const [levelDropdownOpen, setLevelDropdownOpen] = useState(false);
-  const badgeButtonRef = useRef<HTMLButtonElement>(null);
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Word popup state
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
 
+  // Vocab state
   const { data: vocabWords } = useWords();
   const { data: lookedUpWord, isLoading: isLookingUp } = useWordLookup(selectedWord);
   const { data: lists } = useVocabLists();
@@ -85,6 +180,7 @@ export default function Read() {
   const [selectedListId, setSelectedListId] = useState<number | "">("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
+  // ── Init from saved progress ─────────────────────────────────────────────
   useEffect(() => {
     if (!progressInitialized && passages && passages.length > 0 && savedPassageId !== undefined) {
       if (savedPassageId !== null) {
@@ -95,12 +191,25 @@ export default function Read() {
     }
   }, [passages, savedPassageId, progressInitialized]);
 
+  // ── Save progress on index change ────────────────────────────────────────
   useEffect(() => {
     if (!progressInitialized || !passages || passages.length === 0) return;
     const current = passages[currentIndex] as any;
     if (current?.passageId) saveProgress.mutate(current.passageId);
   }, [currentIndex, progressInitialized]); // eslint-disable-line
 
+  // ── Close dropdown when clicking outside ─────────────────────────────────
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setLevelDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // ── Derived values ────────────────────────────────────────────────────────
   const passage = (passages?.[currentIndex] as Passage | undefined) || {
     passageId: 0,
     title: "The Morning Routine",
@@ -108,7 +217,6 @@ export default function Read() {
       "Every morning, Sarah wakes up at 7:00 AM. She brushes her teeth and washes her face. Then, she goes to the kitchen to make breakfast. She usually eats toast with jam and drinks a cup of coffee. After breakfast, she gets dressed and walks to the bus stop to go to work.",
     readingLevel: 1,
     audioUrl: null,
-    storyOrder: 0,
     id: 0,
     content: "Every morning, Sarah wakes up at 7:00 AM.",
     level: "1",
@@ -127,6 +235,7 @@ export default function Read() {
   const levelLabel = LEVEL_LABELS[levelNum] ?? `Level ${levelNum}`;
   const levelDesc = LEVEL_DESCRIPTIONS[levelNum] ?? "";
 
+  // Within-level progress
   const levelPassages = useMemo(
     () => (passages ?? []).filter((p) => (p as any).readingLevel === levelNum),
     [passages, levelNum]
@@ -137,7 +246,9 @@ export default function Read() {
   const levelPosition = levelIndex >= 0 ? levelIndex + 1 : 1;
   const levelTotal = levelPassages.length;
   const isLastInLevel = levelIndex === levelTotal - 1;
+  const isFirstInLevel = levelIndex === 0;
 
+  // All unique levels present in data
   const allLevels = useMemo(() => {
     if (!passages) return [1, 2, 3, 4, 5, 6];
     const nums = [...new Set((passages as any[]).map((p) => p.readingLevel as number))].sort(
@@ -150,6 +261,7 @@ export default function Read() {
   const readMinutes = Math.max(1, Math.ceil(wordCount / 130));
   const readTimeLabel = `${readMinutes} min read`;
 
+  // ── Navigation helpers ────────────────────────────────────────────────────
   const handleNext = () => {
     if (!passages || currentIndex >= passages.length - 1) return;
     setCurrentIndex((i) => i + 1);
@@ -162,6 +274,7 @@ export default function Read() {
     setSelectedWord(null);
   };
 
+  // Jump to a specific level — resume last-read story or fall back to first
   const handleLevelJump = async (level: number) => {
     setLevelDropdownOpen(false);
     if (!passages) return;
@@ -185,6 +298,7 @@ export default function Read() {
       // fall through to first-story fallback
     }
 
+    // Fallback: go to first story in the selected level
     const firstIdx = passages.findIndex((p) => (p as any).readingLevel === level);
     if (firstIdx >= 0) {
       setCurrentIndex(firstIdx);
@@ -192,9 +306,13 @@ export default function Read() {
     }
   };
 
+  // Advance to next level (first story of next level, or resume if visited)
   const handleNextLevel = () => handleLevelJump(levelNum + 1);
+
+  // Return to previous level (last-read or first story)
   const handlePrevLevel = () => handleLevelJump(levelNum - 1);
 
+  // ── Matching word for popup ───────────────────────────────────────────────
   const matchingWord = useMemo(() => {
     if (lookedUpWord) return lookedUpWord;
     if (!selectedWord || !vocabWords) return null;
@@ -202,6 +320,7 @@ export default function Read() {
     return (vocabWords as any[]).find((w) => w.term.toLowerCase() === clean) || null;
   }, [lookedUpWord, selectedWord, vocabWords]);
 
+  // ─────────────────────────────────────────────────────────────────────────
   return (
     <Layout title="Reading Practice">
       <div className="space-y-6">
@@ -209,28 +328,56 @@ export default function Read() {
         <div className="relative h-48 rounded-3xl overflow-hidden shadow-lg">
           <img src={imageUrl} alt="Reading context" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-6">
-            <button
-              ref={badgeButtonRef}
-              type="button"
-              onClick={() => {
-                if (badgeButtonRef.current) {
-                  const rect = badgeButtonRef.current.getBoundingClientRect();
-                  setDropdownPos({ top: rect.bottom + 8, left: rect.left });
-                }
-                setLevelDropdownOpen((o) => !o);
-              }}
-              className="flex items-center gap-1.5 text-xs font-bold text-primary-foreground bg-primary/90 px-3 py-1.5 rounded-full backdrop-blur-sm hover:bg-primary transition-colors w-fit mb-2"
-            >
-              {levelLabel} · {levelDesc}
-              <ChevronDown
-                className={`w-3.5 h-3.5 transition-transform ${levelDropdownOpen ? "rotate-180" : ""}`}
-              />
-            </button>
+            {/* Level dropdown badge */}
+            <div className="relative w-fit mb-2" ref={dropdownRef}>
+              <button
+                type="button"
+                onClick={() => setLevelDropdownOpen((o) => !o)}
+                className="flex items-center gap-1.5 text-xs font-bold text-primary-foreground bg-primary/90 px-3 py-1.5 rounded-full backdrop-blur-sm hover:bg-primary transition-colors"
+              >
+                {levelLabel} · {levelDesc}
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform ${levelDropdownOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              {/* Dropdown panel */}
+              <AnimatePresence>
+                {levelDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute top-full left-0 mt-2 w-52 bg-card border border-border rounded-2xl shadow-xl overflow-hidden z-20"
+                  >
+                    {allLevels.map((lvl) => (
+                      <button
+                        key={lvl}
+                        type="button"
+                        onClick={() => handleLevelJump(lvl)}
+                        className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors hover:bg-secondary/70 flex items-center justify-between ${
+                          lvl === levelNum
+                            ? "bg-primary/10 text-primary"
+                            : "text-foreground/80"
+                        }`}
+                      >
+                        <span>{LEVEL_LABELS[lvl]}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {LEVEL_DESCRIPTIONS[lvl]}
+                        </span>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
             <h2 className="text-2xl font-bold text-white">{passage.title}</h2>
           </div>
         </div>
 
-        {/* Stats Row */}
+        {/* Stats Row — within-level progress */}
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <div className="flex gap-4">
             <div className="flex items-center gap-1.5">
@@ -242,6 +389,7 @@ export default function Read() {
               <span>{wordCount} words</span>
             </div>
           </div>
+          {/* Within-level story counter */}
           <span className="text-xs font-semibold tabular-nums">
             {levelPosition} / {levelTotal}
           </span>
@@ -265,7 +413,7 @@ export default function Read() {
           )}
         </div>
 
-        {/* Level completion banner */}
+        {/* "Feeling ready for the next level?" banner — only on last story */}
         <AnimatePresence>
           {isLastInLevel && (
             <motion.div
@@ -275,7 +423,7 @@ export default function Read() {
               className="bg-primary/10 border border-primary/20 rounded-2xl p-5 space-y-3"
             >
               <p className="text-sm font-semibold text-primary">
-                You've finished {levelLabel}!
+                🎉 You've finished {levelLabel}!
               </p>
               <p className="text-sm text-foreground/70">
                 Feeling ready for{" "}
@@ -285,6 +433,7 @@ export default function Read() {
                 ?
               </p>
               <div className="flex gap-3 flex-wrap">
+                {/* Advance to next level */}
                 {levelNum < 6 && (
                   <button
                     type="button"
@@ -295,6 +444,7 @@ export default function Read() {
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 )}
+                {/* Return to previous level */}
                 {levelNum > 1 && (
                   <button
                     type="button"
@@ -310,7 +460,7 @@ export default function Read() {
           )}
         </AnimatePresence>
 
-        {/* Navigation */}
+        {/* Story Navigation — Back / Next (within full list) */}
         <div className="flex items-center justify-between gap-4">
           <button
             type="button"
@@ -334,54 +484,7 @@ export default function Read() {
         </div>
       </div>
 
-      {/* Level dropdown portal */}
-      {typeof document !== "undefined" && createPortal(
-        <AnimatePresence>
-          {levelDropdownOpen && (
-            <>
-              <div
-                className="fixed inset-0 z-[998]"
-                onClick={() => setLevelDropdownOpen(false)}
-              />
-              <motion.div
-                initial={{ opacity: 0, y: -6, scale: 0.97 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -6, scale: 0.97 }}
-                transition={{ duration: 0.15 }}
-                style={{
-                  position: "fixed",
-                  top: dropdownPos.top,
-                  left: dropdownPos.left,
-                  width: 220,
-                  zIndex: 999,
-                }}
-                className="bg-card border border-border rounded-2xl shadow-xl overflow-hidden"
-              >
-                {allLevels.map((lvl) => (
-                  <button
-                    key={lvl}
-                    type="button"
-                    onClick={() => handleLevelJump(lvl)}
-                    className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors hover:bg-secondary/70 flex items-center justify-between ${
-                      lvl === levelNum
-                        ? "bg-primary/10 text-primary"
-                        : "text-foreground/80"
-                    }`}
-                  >
-                    <span>{LEVEL_LABELS[lvl]}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {LEVEL_DESCRIPTIONS[lvl]}
-                    </span>
-                  </button>
-                ))}
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>,
-        document.body
-      )}
-
-      {/* Word Definition Popup */}
+      {/* ── Word Definition Popup (UNCHANGED) ──────────────────────────── */}
       <AnimatePresence>
         {selectedWord && (
           <>
@@ -530,3 +633,28 @@ export default function Read() {
     </Layout>
   );
 }
+```
+
+---
+
+## Summary of all changes
+
+| File | What changed |
+|---|---|
+| `server/storage.ts` | Added `getLastReadPassageInLevel` method to interface + class |
+| `server/routes.ts` | Added `GET /api/reading-progress/level/:level` endpoint |
+| `client/src/pages/Read.tsx` | Full rewrite — level dropdown, within-level counter, level-up banner |
+
+No `db:push` needed. No schema changes.
+
+---
+
+## Behaviour notes
+
+**Progress counter** (`X / 10`): counts only passages with the same `readingLevel` as the current story. The Treasure Island passage (level 2, storyOrder 0) counts toward Level 2's total, so that level may show "X / 11".
+
+**Level dropdown**: tapping the level badge opens a panel listing all 6 levels. The current level is highlighted. Selecting one calls `/api/reading-progress/level/:level` and jumps to the last-read story there, or falls back to the first story of that level if never visited.
+
+**"Feeling ready for the next level?" banner**: rendered only when `isLastInLevel` is true (levelIndex === levelTotal - 1). Shows "Go to Level X+1" and, if not on level 1, "Back to Level X−1". Both buttons use the same `handleLevelJump` helper.
+
+**Back/Next buttons** at the bottom still step through the global list one story at a time — useful for moving across the level boundary naturally.

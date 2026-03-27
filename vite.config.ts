@@ -52,6 +52,9 @@ export default defineConfig({
         manualChunks: {
           react: ["react", "react-dom"],
           router: ["wouter"],
+          motion: ["framer-motion"],
+          query: ["@tanstack/react-query"],
+          icons: ["lucide-react"],
         },
       },
     },

@@ -1,4 +1,5 @@
 import { Layout } from "@/components/Layout";
+import { ME_QUERY_KEY } from "@/hooks/use-me";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useState } from "react";
@@ -18,7 +19,7 @@ export default function Admin() {
   const [, navigate] = useLocation();
 
   const { data: currentUser } = useQuery({
-    queryKey: ["me"],
+    queryKey: ME_QUERY_KEY,
     queryFn: () => fetch("/api/me", { credentials: "include" }).then(r => r.json()),
   });
 
@@ -113,7 +114,7 @@ function UserRow({ user }: { user: AdminUser }) {
         <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap ${
           user.role === "admin"
             ? "bg-amber-100 text-amber-800"
-            : "bg-blue-100 text-blue-800"
+            : "bg-primary/10 text-primary"
         }`}>
           {user.role}
         </span>

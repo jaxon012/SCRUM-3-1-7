@@ -8,6 +8,12 @@ import { createServer } from "http";
 const app = express();
 const httpServer = createServer(app);
 
+// Behind Railway/Render/Heroku/nginx TLS termination, Express must trust X-Forwarded-* so
+// sessions and secure cookies behave correctly.
+if (process.env.TRUST_PROXY === "1" || process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
+
 declare module "http" {
   interface IncomingMessage {
     rawBody: unknown;
@@ -15,6 +21,18 @@ declare module "http" {
 }
 
 app.use(compression());
+
+// Security headers
+app.use((_req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "geolocation=(), camera=(), microphone=()");
+  if (process.env.NODE_ENV === "production") {
+    res.setHeader("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+  }
+  next();
+});
 
 app.use(
   express.json({

@@ -2,9 +2,10 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Sparkles, Check } from "lucide-react";
 import { AudioPlayer } from "./AudioPlayer";
-import { useUpdateWordProgress } from "@/hooks/use-word-progress";
+import { useMarkWordAsMasteredByWordId, useUpdateWordProgress } from "@/hooks/use-word-progress";
 import { useVocabLists, useAddWordToVocabList, useCreateVocabList } from "@/hooks/use-vocab-lists";
 import { CreateVocabListDialog } from "./CreateVocabListDialog";
+import { useToast } from "@/hooks/use-toast";
 import type { Word } from "@shared/schema";
 
 interface WordCardProps {
@@ -13,8 +14,10 @@ interface WordCardProps {
 }
 
 export function WordCard({ word, index }: WordCardProps) {
+  const { toast } = useToast();
   const [isExpanded, setIsExpanded] = useState(false);
-  const { mutate: updateProgress, isPending } = useUpdateWordProgress();
+  const { mutate: updateProgress, isPending: isUpdatePending } = useUpdateWordProgress();
+  const { mutate: markMasteredByWordId, isPending: isMarkPending } = useMarkWordAsMasteredByWordId();
   const { data: lists } = useVocabLists();
   const addWordToList = useAddWordToVocabList();
   const createList = useCreateVocabList();
@@ -30,16 +33,19 @@ export function WordCard({ word, index }: WordCardProps) {
     e.stopPropagation(); // Prevent card collapse when clicking the button
     if (userWordId) {
       updateProgress({ userWordId });
-    } else {
-      console.warn("userWordId is undefined - no progress record for this word");
+      return;
     }
+
+    // In vocab-list mode, list words may not include a `userWordId` yet.
+    // Fall back to marking mastered by `wordId` (server will create progress if missing).
+    markMasteredByWordId({ wordId: word.wordId });
   };
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
+      transition={{ delay: Math.min(index * 0.03, 0.15) }}
       className={`
         bg-card rounded-2xl border border-border/50 shadow-sm
         hover:shadow-md hover:border-primary/20 transition-all duration-300
@@ -66,6 +72,9 @@ export function WordCard({ word, index }: WordCardProps) {
               <img
                 src={word.imageUrl}
                 alt={word.term}
+                width={40}
+                height={40}
+                loading="lazy"
                 className="w-full h-full object-cover"
               />
             ) : (
@@ -100,7 +109,7 @@ export function WordCard({ word, index }: WordCardProps) {
             transition={{ duration: 0.2 }}
             className="bg-secondary/30 border-t border-border/50"
           >
-            <div className="p-4 space-y-4 pb-6">
+            <div className="p-4 space-y-4 pb-6 w-full max-w-md mx-auto">
               <div className="space-y-1">
                 <span className="text-xs font-semibold text-primary uppercase tracking-wider">Definition</span>
                 <p className="text-sm text-foreground/80 leading-relaxed">{word.definition}</p>
@@ -112,7 +121,10 @@ export function WordCard({ word, index }: WordCardProps) {
                   <img
                     src={word.imageUrl}
                     alt={word.term}
-                    className="w-full max-h-64 object-cover rounded-xl border border-border/60"
+                    width={320}
+                    height={160}
+                    loading="lazy"
+                    className="block w-full max-w-[min(100%,300px)] md:max-w-[280px] max-h-48 md:max-h-40 object-cover rounded-xl border border-border/60 mx-auto md:mx-0"
                   />
                 </div>
               )}
@@ -141,7 +153,7 @@ export function WordCard({ word, index }: WordCardProps) {
               <div className="space-y-3">
                 <button
                   onClick={handleMarkAsMastered}
-                  disabled={isMastered || isPending}
+                  disabled={isMastered || isUpdatePending || isMarkPending}
                   className={`
                     w-full py-2 px-4 rounded-xl font-semibold text-sm transition-all
                     ${isMastered
@@ -150,7 +162,7 @@ export function WordCard({ word, index }: WordCardProps) {
                     }
                   `}
                 >
-                  {isPending ? "Updating..." : isMastered ? "✓ Mastered" : "Mark as Mastered"}
+                  {isUpdatePending || isMarkPending ? "Updating..." : isMastered ? "✓ Mastered" : "Mark as Mastered"}
                 </button>
 
                 {/* Add to vocab lists */}
@@ -163,6 +175,7 @@ export function WordCard({ word, index }: WordCardProps) {
                     onChange={(e) =>
                       setSelectedListId(e.target.value ? Number(e.target.value) : "")
                     }
+                    aria-label="Choose a vocabulary list"
                     className="w-full px-3 py-2 rounded-xl bg-secondary/50 border border-border/60 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
                   >
                     <option value="">Choose a list…</option>
@@ -184,6 +197,14 @@ export function WordCard({ word, index }: WordCardProps) {
                         });
                       } catch (err) {
                         console.error(err);
+                        toast({
+                          variant: "destructive",
+                          title: "Could not add to list",
+                          description:
+                            err instanceof Error
+                              ? err.message
+                              : "Check that you are logged in and try again.",
+                        });
                       }
                     }}
                     disabled={!selectedListId || addWordToList.isPending}
@@ -220,6 +241,14 @@ export function WordCard({ word, index }: WordCardProps) {
             });
           } catch (err) {
             console.error(err);
+            toast({
+              variant: "destructive",
+              title: "Could not add to list",
+              description:
+                err instanceof Error
+                  ? err.message
+                  : "Check that you are logged in and try again.",
+            });
           }
         }}
       />

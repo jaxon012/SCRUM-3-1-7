@@ -1,6 +1,8 @@
 import { Layout } from "@/components/Layout";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ME_QUERY_KEY } from "@/hooks/use-me";
+import { clearVocabSortPrefsFromStorage } from "@/lib/vocab-prefs-storage";
 import { useLocation } from "wouter";
 
 export default function Signup() {
@@ -31,7 +33,9 @@ export default function Signup() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["me"] });
+      clearVocabSortPrefsFromStorage();
+      queryClient.clear();
+      void queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY });
       navigate("/");
     },
     onError: (err: Error) => setError(err.message),
@@ -39,60 +43,76 @@ export default function Signup() {
 
   return (
     <Layout showBack backOnly>
-      <div className="space-y-4">
-        <h1 className="text-2xl font-bold text-foreground">Create Account</h1>
-        <p className="text-sm text-muted-foreground">
-          Create an account to save your progress.
-        </p>
+      <div className="min-h-[calc(100vh-220px)] flex items-center justify-center">
+        <div className="w-full max-w-md">
+          <div className="rounded-3xl border border-border/70 bg-card/90 p-6 shadow-xl backdrop-blur-sm">
+            <div className="flex flex-col items-center text-center space-y-3 mb-4">
+              <img
+                src="/dragon-face.png"
+                alt="LingoQuest mascot"
+                className="w-16 h-16 rounded-xl object-cover border border-border/50"
+                loading="eager"
+              />
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">Create Account</h1>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Create an account to save your progress.
+                </p>
+              </div>
+            </div>
 
-        {error && (
-          <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
-        )}
+            {error && (
+              <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-lg mb-4">
+                {error}
+              </p>
+            )}
 
-        <div className="space-y-2">
-          <input
-            className="w-full border rounded-lg px-3 py-2 text-sm"
-            placeholder="Display Name"
-            value={displayName}
-            onChange={e => setDisplayName(e.target.value)}
-          />
-          <input
-            className="w-full border rounded-lg px-3 py-2 text-sm"
-            placeholder="Email"
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-          />
-          <input
-            className="w-full border rounded-lg px-3 py-2 text-sm"
-            placeholder="Username"
-            value={username}
-            onChange={e => setUsername(e.target.value)}
-          />
-          <input
-            className="w-full border rounded-lg px-3 py-2 text-sm"
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-          />
-          <input
-            className="w-full border rounded-lg px-3 py-2 text-sm"
-            type="password"
-            placeholder="Confirm password"
-            value={confirmPassword}
-            onChange={e => setConfirmPassword(e.target.value)}
-          />
+            <div className="space-y-2">
+              <input
+                className="w-full border border-border bg-background text-foreground rounded-xl px-3 py-2.5 text-sm"
+                placeholder="Display Name"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+              />
+              <input
+                className="w-full border border-border bg-background text-foreground rounded-xl px-3 py-2.5 text-sm"
+                placeholder="Email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <input
+                className="w-full border border-border bg-background text-foreground rounded-xl px-3 py-2.5 text-sm"
+                placeholder="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+              <input
+                className="w-full border border-border bg-background text-foreground rounded-xl px-3 py-2.5 text-sm"
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <input
+                className="w-full border border-border bg-background text-foreground rounded-xl px-3 py-2.5 text-sm"
+                type="password"
+                placeholder="Confirm password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+            </div>
+
+            <button
+              className="w-full mt-4 py-2.5 px-4 bg-primary text-white rounded-xl text-sm font-medium hover:opacity-90 disabled:opacity-50"
+              type="button"
+              disabled={signupMutation.isPending}
+              onClick={() => signupMutation.mutate()}
+            >
+              {signupMutation.isPending ? "Creating..." : "Create Account"}
+            </button>
+          </div>
         </div>
-
-        <button
-          className="w-full py-2 px-4 bg-primary text-white rounded-lg text-sm hover:opacity-90 disabled:opacity-50"
-          type="button"
-          disabled={signupMutation.isPending}
-          onClick={() => signupMutation.mutate()}
-        >
-          {signupMutation.isPending ? "Creating..." : "Create Account"}
-        </button>
       </div>
     </Layout>
   );
