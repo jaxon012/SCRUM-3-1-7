@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Play, Pause, Square } from "lucide-react";
+import { useLocation } from "wouter";
 
 function SpeakerPlayIcon({ className }: { className?: string }) {
   return (
@@ -157,10 +158,32 @@ export function TextToSpeechWidget() {
     setIsActive(false);
   };
 
+  const [location] = useLocation();
+  const isAdventure = location === "/adventure";
+
   if (!supported) return null;
 
+  const positionClass = isAdventure
+    ? "fixed top-20 left-4 md:top-36 md:left-6 z-[60] flex flex-col items-start gap-2 select-none"
+    : "fixed bottom-24 right-4 md:bottom-8 md:right-6 z-[60] flex flex-col items-end gap-2 select-none";
+
   return (
-    <div className="fixed bottom-24 right-4 md:bottom-8 md:right-6 z-[60] flex flex-col items-end gap-2 select-none">
+    <div className={positionClass}>
+      <button
+        onClick={toggleActive}
+        aria-label={isActive ? "Turn off read aloud" : "Turn on read aloud"}
+        aria-pressed={isActive}
+        className={`tts-main-btn ${isActive ? "tts-main-btn--active" : "tts-main-btn--idle"}`}
+      >
+        <SpeakerPlayIcon className="w-8 h-8" />
+      </button>
+
+      {/* Hint shown while active but not yet speaking */}
+      {isActive && !isSpeaking && (
+        <div className="tts-hint animate-fade-in">
+          Tap &amp; drag to read text aloud
+        </div>
+      )}
 
       {/* Pause / Stop — visible whenever speaking */}
       {isSpeaking && (
@@ -185,22 +208,6 @@ export function TextToSpeechWidget() {
           </button>
         </div>
       )}
-
-      {/* Hint shown while active but not yet speaking */}
-      {isActive && !isSpeaking && (
-        <div className="tts-hint animate-fade-in">
-          Tap &amp; drag to read text aloud
-        </div>
-      )}
-
-      <button
-        onClick={toggleActive}
-        aria-label={isActive ? "Turn off read aloud" : "Turn on read aloud"}
-        aria-pressed={isActive}
-        className={`tts-main-btn ${isActive ? "tts-main-btn--active" : "tts-main-btn--idle"}`}
-      >
-        <SpeakerPlayIcon className="w-8 h-8" />
-      </button>
     </div>
   );
 }
