@@ -19,8 +19,8 @@
   --popover-foreground: 210 30% 20%;
   --popover-border: 42 30% 78%;
 
-  /* #ac7ab6 */
-  --primary: 290 29% 60%;
+  /* #895194 — darkened from 60% to 45% lightness for WCAG AA contrast */
+  --primary: 290 29% 45%;
   --primary-foreground: 0 0% 98%;
 
   --secondary: 290 29% 60%;
@@ -29,7 +29,7 @@
   --muted: 42 40% 85%;
   --muted-foreground: 210 20% 35%;
 
-  --accent: 290 29% 60%;
+  --accent: 290 29% 45%;
   --accent-foreground: 210 30% 20%;
 
   --destructive: 0 72% 51%;
@@ -37,7 +37,7 @@
 
   --border: 42 25% 80%;
   --input: 42 25% 80%;
-  --ring: 290 29% 60%;
+  --ring: 290 29% 45%;
 
   --radius: 1rem;
 }
