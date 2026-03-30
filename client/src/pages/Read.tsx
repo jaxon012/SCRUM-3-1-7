@@ -24,6 +24,7 @@ import {
   useCreateVocabList,
   useAddWordToVocabList,
 } from "@/hooks/use-vocab-lists";
+import { useAddWordToVocab } from "@/hooks/use-add-to-vocab";
 import { CreateVocabListDialog } from "@/components/CreateVocabListDialog";
 import type { Passage } from "@shared/schema";
 
@@ -82,6 +83,7 @@ export default function Read() {
   const { data: lists } = useVocabLists();
   const createList = useCreateVocabList();
   const addWordToList = useAddWordToVocabList();
+  const addWordToVocab = useAddWordToVocab();
   const [selectedListId, setSelectedListId] = useState<number | "">("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
@@ -466,7 +468,7 @@ export default function Read() {
                       }
                       className="w-full px-3 py-2 rounded-xl bg-secondary/50 border border-border/60 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
                     >
-                      <option value="">Choose a list…</option>
+                      <option value="">All Words</option>
                       {lists?.map((list) => (
                         <option key={list.vocabListId} value={list.vocabListId}>
                           {list.name}
@@ -476,9 +478,11 @@ export default function Read() {
                     <button
                       type="button"
                       onClick={async () => {
-                        if (!selectedWord || !selectedListId) return;
+                        if (!selectedWord) return;
                         try {
-                          if (matchingWord) {
+                          if (!selectedListId) {
+                            await addWordToVocab.mutateAsync(selectedWord);
+                          } else if (matchingWord) {
                             await addWordToList.mutateAsync({
                               listId: Number(selectedListId),
                               wordId: matchingWord.wordId,
@@ -493,10 +497,10 @@ export default function Read() {
                           console.error(err);
                         }
                       }}
-                      disabled={!selectedListId || addWordToList.isPending}
+                      disabled={addWordToList.isPending || addWordToVocab.isPending}
                       className="w-full px-3 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold disabled:opacity-50"
                     >
-                      {addWordToList.isPending ? "Adding..." : "Add to Vocab"}
+                      {addWordToList.isPending || addWordToVocab.isPending ? "Adding..." : "Add to Vocab"}
                     </button>
                   </div>
                   <button

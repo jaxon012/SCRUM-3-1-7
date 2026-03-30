@@ -8,6 +8,7 @@ import {
   useCreateVocabList,
   useAddWordToVocabList,
 } from "@/hooks/use-vocab-lists";
+import { useAddWordToVocab } from "@/hooks/use-add-to-vocab";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { CreateVocabListDialog } from "@/components/CreateVocabListDialog";
 
@@ -61,6 +62,7 @@ export default function Adventure() {
   const { data: lists } = useVocabLists();
   const createList = useCreateVocabList();
   const addWordToList = useAddWordToVocabList();
+  const addWordToVocab = useAddWordToVocab();
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [selectedListId, setSelectedListId] = useState<number | "">("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -364,6 +366,7 @@ export default function Adventure() {
         lists={lists}
         createList={createList}
         addWordToList={addWordToList}
+        addWordToVocab={addWordToVocab}
         selectedListId={selectedListId}
         setSelectedListId={setSelectedListId}
         onOpenCreateDialog={() => setShowCreateDialog(true)}
@@ -398,6 +401,7 @@ interface AdventureWordModalProps {
   lists?: { vocabListId: number; name: string }[];
   createList: ReturnType<typeof useCreateVocabList>;
   addWordToList: ReturnType<typeof useAddWordToVocabList>;
+  addWordToVocab: ReturnType<typeof useAddWordToVocab>;
   selectedListId: number | "";
   setSelectedListId: (v: number | "") => void;
   onOpenCreateDialog: () => void;
@@ -409,6 +413,7 @@ function AdventureWordModal({
   vocabWords,
   lists,
   addWordToList,
+  addWordToVocab,
   selectedListId,
   setSelectedListId,
   onOpenCreateDialog,
@@ -504,7 +509,7 @@ function AdventureWordModal({
                     }
                     className="w-full px-3 py-2 rounded-xl bg-secondary/50 border border-border/60 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
                   >
-                    <option value="">Choose a list...</option>
+                    <option value="">All Words</option>
                     {lists?.map((list) => (
                       <option key={list.vocabListId} value={list.vocabListId}>
                         {list.name}
@@ -514,9 +519,11 @@ function AdventureWordModal({
                   <button
                     type="button"
                     onClick={async () => {
-                      if (!selectedWord || !selectedListId) return;
+                      if (!selectedWord) return;
                       try {
-                        if (matchingWord) {
+                        if (!selectedListId) {
+                          await addWordToVocab.mutateAsync(selectedWord);
+                        } else if (matchingWord) {
                           await addWordToList.mutateAsync({
                             listId: Number(selectedListId),
                             wordId: matchingWord.wordId,
@@ -531,10 +538,10 @@ function AdventureWordModal({
                         console.error(err);
                       }
                     }}
-                    disabled={!selectedListId || addWordToList.isPending}
+                    disabled={addWordToList.isPending || addWordToVocab.isPending}
                     className="w-full px-3 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold disabled:opacity-50"
                   >
-                    {addWordToList.isPending ? "Adding..." : "Add to Vocab"}
+                    {addWordToList.isPending || addWordToVocab.isPending ? "Adding..." : "Add to Vocab"}
                   </button>
                 </div>
 
