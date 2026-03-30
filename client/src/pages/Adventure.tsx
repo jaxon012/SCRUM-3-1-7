@@ -14,7 +14,7 @@ import { CreateVocabListDialog } from "@/components/CreateVocabListDialog";
 
 const MAX_TURNS = 5;
 
-const DEFAULT_ADVENTURE_SCENE_IMAGE = "/adventure-hero.png";
+const DEFAULT_ADVENTURE_SCENE_IMAGE = "/adventure-hero.webp";
 
 /** Turn the latest narrator text into a visual prompt for the image API. */
 function buildSceneImagePrompt(storyBeat: string): string {
@@ -341,11 +341,13 @@ export default function Adventure() {
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
               placeholder="What do you do?"
+              aria-label="Your action"
               disabled={isStreaming}
               className="flex-1 bg-secondary/30 rounded-xl px-3 py-2.5 outline-none text-sm placeholder:text-muted-foreground disabled:opacity-50 border border-transparent focus:border-primary/30 transition-colors"
             />
             <button
               type="submit"
+              aria-label={isStreaming ? "Sending…" : "Send"}
               disabled={!textInput.trim() || isStreaming}
               className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-40 hover:bg-primary/90 transition-colors shrink-0"
             >

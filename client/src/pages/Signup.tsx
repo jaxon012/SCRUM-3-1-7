@@ -71,12 +71,14 @@ export default function Signup() {
               <input
                 className="w-full border border-border bg-background text-foreground rounded-xl px-3 py-2.5 text-sm"
                 placeholder="Display Name"
+                aria-label="Display Name"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
               />
               <input
                 className="w-full border border-border bg-background text-foreground rounded-xl px-3 py-2.5 text-sm"
                 placeholder="Email"
+                aria-label="Email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -84,6 +86,7 @@ export default function Signup() {
               <input
                 className="w-full border border-border bg-background text-foreground rounded-xl px-3 py-2.5 text-sm"
                 placeholder="Username"
+                aria-label="Username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
               />
@@ -91,6 +94,7 @@ export default function Signup() {
                 className="w-full border border-border bg-background text-foreground rounded-xl px-3 py-2.5 text-sm"
                 type="password"
                 placeholder="Password"
+                aria-label="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -98,6 +102,7 @@ export default function Signup() {
                 className="w-full border border-border bg-background text-foreground rounded-xl px-3 py-2.5 text-sm"
                 type="password"
                 placeholder="Confirm password"
+                aria-label="Confirm password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />

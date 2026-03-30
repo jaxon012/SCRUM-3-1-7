@@ -115,12 +115,14 @@ export default function Login() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Username"
+                  aria-label="Username"
                   className="w-full border border-border bg-background text-foreground rounded-xl px-3 py-2.5 text-sm"
                 />
                 <input
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Password"
+                  aria-label="Password"
                   type="password"
                   className="w-full border border-border bg-background text-foreground rounded-xl px-3 py-2.5 text-sm"
                 />

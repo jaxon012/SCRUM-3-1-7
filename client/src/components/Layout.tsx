@@ -74,6 +74,7 @@ export function Layout({ children, title, showBack = false, backOnly = false }: 
               {(showBack || backOnly) && (
                 <Link
                   href={backOnly ? "/login" : "/"}
+                  aria-label="Go back"
                   className="p-2 -ml-2 rounded-full hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
                 >
                   <ChevronLeftIcon className="w-6 h-6" />
@@ -146,12 +147,14 @@ export function Layout({ children, title, showBack = false, backOnly = false }: 
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         placeholder="Username"
+                        aria-label="Username"
                         className="border border-border bg-background text-foreground rounded-lg px-3 py-2 text-sm"
                       />
                       <input
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Password"
+                        aria-label="Password"
                         type="password"
                         className="border border-border bg-background text-foreground rounded-lg px-3 py-2 text-sm"
                       />
