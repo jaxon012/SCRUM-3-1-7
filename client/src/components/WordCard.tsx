@@ -4,6 +4,7 @@ import { ChevronDown, Sparkles, Check } from "lucide-react";
 import { AudioPlayer } from "./AudioPlayer";
 import { useMarkWordAsMasteredByWordId, useUpdateWordProgress } from "@/hooks/use-word-progress";
 import { useVocabLists, useAddWordToVocabList, useCreateVocabList } from "@/hooks/use-vocab-lists";
+import { useAddWordToVocab } from "@/hooks/use-add-to-vocab";
 import { CreateVocabListDialog } from "./CreateVocabListDialog";
 import { useToast } from "@/hooks/use-toast";
 import type { Word } from "@shared/schema";
@@ -20,6 +21,7 @@ export function WordCard({ word, index }: WordCardProps) {
   const { mutate: markMasteredByWordId, isPending: isMarkPending } = useMarkWordAsMasteredByWordId();
   const { data: lists } = useVocabLists();
   const addWordToList = useAddWordToVocabList();
+  const addWordToVocab = useAddWordToVocab();
   const createList = useCreateVocabList();
   const [selectedListId, setSelectedListId] = useState<number | "">("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -178,7 +180,7 @@ export function WordCard({ word, index }: WordCardProps) {
                     aria-label="Choose a vocabulary list"
                     className="w-full px-3 py-2 rounded-xl bg-secondary/50 border border-border/60 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
                   >
-                    <option value="">Choose a list…</option>
+                    <option value="">All Words</option>
                     {lists?.map((list) => (
                       <option key={list.vocabListId} value={list.vocabListId}>
                         {list.name}
@@ -189,12 +191,15 @@ export function WordCard({ word, index }: WordCardProps) {
                     type="button"
                     onClick={async (e) => {
                       e.stopPropagation();
-                      if (!selectedListId) return;
                       try {
-                        await addWordToList.mutateAsync({
-                          listId: Number(selectedListId),
-                          wordId: word.wordId,
-                        });
+                        if (!selectedListId) {
+                          await addWordToVocab.mutateAsync(word.term);
+                        } else {
+                          await addWordToList.mutateAsync({
+                            listId: Number(selectedListId),
+                            wordId: word.wordId,
+                          });
+                        }
                       } catch (err) {
                         console.error(err);
                         toast({
@@ -207,10 +212,10 @@ export function WordCard({ word, index }: WordCardProps) {
                         });
                       }
                     }}
-                    disabled={!selectedListId || addWordToList.isPending}
+                    disabled={addWordToList.isPending || addWordToVocab.isPending}
                     className="w-full px-3 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold disabled:opacity-50"
                   >
-                    {addWordToList.isPending ? "Adding..." : "Add to Vocab"}
+                    {addWordToList.isPending || addWordToVocab.isPending ? "Adding..." : "Add to Vocab"}
                   </button>
                   <button
                     type="button"
